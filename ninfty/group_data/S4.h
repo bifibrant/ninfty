@@ -1,3 +1,5 @@
+#include<vector>
+
 std::vector<std::string> subgroup_dictionary{
     "⟨()⟩ ≅ 1",
     "⟨(1,2)(3,4)⟩ ≅ C2",
@@ -153,6 +155,7 @@ std::vector<std::pair<unsigned, unsigned>> lattice{
 {25,29},
 {27,29}
 };
+
 std::vector<std::vector<unsigned>> conjugates{
 {0,4,3,8,1,11},
 {0,4,3,8,1,11},
