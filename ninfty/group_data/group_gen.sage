@@ -1,19 +1,7 @@
-p = 72
-n = 1
-H = CyclicPermutationGroup(p);
-G = direct_product_permgroups([H]*n);
-#G = QuaternionGroup()
-#G = CyclicPermutationGroup(7).holomorph()
-#G = DihedralGroup(4)
-#G = AlternatingGroup(5)
-#G = SymmetricGroup(4)
-#G = PSL(2,7)
-
-#A = gap.SmallGroup(64,54)
-#G = PermutationGroup(gap_group = A.AsPermGroup())
+G = PermutationGroup(gap_group = gap.SmallGroup(12,3).AsPermGroup())
 
 # Set the file name
-group_name = "Cp2q3"
+group_name = "A4"
 
 sub = G.subgroups()
 f = lambda h,k: h.is_subgroup(k)
@@ -75,14 +63,14 @@ for i, edge in enumerate(Q):
         conjugate_string = conjugate_string[:-1]
     conjugate_string += "},\n"
 conjugate_string = conjugate_string[:-2]
-conjugate_string += "};\n \n"
+conjugate_string += "\n};\n \n"
 
 dictionary_string = "std::vector<std::string> subgroup_dictionary{\n"
 for i in range(0,len(sub)):
     
     dictionary_string += "\"" + str(sub[i].structure_description()) + "\",\n"
 dictionary_string = dictionary_string[:-2]
-dictionary_string += "\n};\n"
+dictionary_string += "\n};\n\n"
 
 lattice_string = "std::vector<std::pair<unsigned, unsigned>> lattice{\n"
 for el in Q:
@@ -130,6 +118,7 @@ composite_string = composite_string[:-2]
 composite_string += "\n};"
 
 with open(group_name + ".h" , 'w') as f:
+    f.write("#include <vector>\n")
     f.write(dictionary_string)
     f.write("\n")
     f.write(lattice_string)
