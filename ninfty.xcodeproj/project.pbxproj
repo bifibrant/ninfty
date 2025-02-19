@@ -20,6 +20,7 @@
 
 /* Begin PBXFileReference section */
 		CCE5B1A52D66139400D2C7FB /* ninfty */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ninfty; sourceTree = BUILT_PRODUCTS_DIR; };
+		CCE5B1B22D6618D000D2C7FB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -44,6 +45,7 @@
 		CCE5B19C2D66139400D2C7FB = {
 			isa = PBXGroup;
 			children = (
+				CCE5B1B22D6618D000D2C7FB /* .gitignore */,
 				CCE5B1A72D66139400D2C7FB /* ninfty */,
 				CCE5B1A62D66139400D2C7FB /* Products */,
 			);

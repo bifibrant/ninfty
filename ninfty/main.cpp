@@ -5,10 +5,8 @@
 //  Created by Scott Balchin on 19/02/2025.
 //
 
-#include <iostream>
+#include "ninfty.h"
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
-    std::cout << "Hello, World!\n";
+int main() {
     return 0;
 }
