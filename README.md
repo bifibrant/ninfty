@@ -1,2 +1,2 @@
 # ninfty
-A C++ suite of algorithms for homotopical combinatorics
+A suite of algorithms for enumeration problems arising in homotopical combinatorics
