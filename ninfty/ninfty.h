@@ -17,6 +17,7 @@
 #include <future>
 #include <random>
 
+enum GenerationType{ ALL, SATURATED, COSATURATED};
 
 // Hash function for vectors of unsigned int.
 // Taken from https://stackoverflow.com/a/12996028
@@ -44,11 +45,39 @@ std::vector<std::vector<unsigned>> NEW_EDGES;
 std::vector<std::shared_future<std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher>>> THREAD_STORE;
 std::vector<unsigned> GOOD_EDGES;
 unsigned COMPLEXITY = 0;
+std::vector<std::vector<unsigned>> transitive_closure;
+
+// An algorithm which finds (and updates) the transitive closre of the lattice elements
+
+void findTransitiveClosure(){
+    for(unsigned i=0; i<lattice.size(); ++i){
+        std::vector<unsigned> i_row;
+        for(unsigned j=0; j<lattice.size(); ++j){
+            unsigned pos = std::min(i,j);
+            if(lattice[i].second == lattice[j].first & i != j){
+                std::pair<unsigned,unsigned> test_el{lattice[i].first, lattice[j].second};
+                auto it = std::find(lattice.begin(), lattice.end(), test_el);
+                if(it != lattice.end()){
+                    pos = unsigned(std::distance(lattice.begin(), it));
+                }
+            }
+            i_row.push_back(pos);
+        }
+        transitive_closure.push_back(i_row);
+    }
+}
+
+
 
 // An implementation of Rubin's algorithm to find the closure of a collection of norm maps
 // Adapted from https://arxiv.org/pdf/1903.08723 Construction B.1
 std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0){
     std::set<unsigned> r1_set, r2_set, r4_set;
+    
+    // We check to see if we have computed the transitive closure or not
+    if(transitive_closure.size() == 0){
+        findTransitiveClosure();
+    }
     
     // Close under conjugation
     for(auto it = r0.begin(); it != r0.end(); ++it){
@@ -187,6 +216,11 @@ void transferFind(const bool verbose = true){
 // This provides a set of minimal generators for a given transfer system
 std::vector<unsigned> findBasis(const std::vector<unsigned>& rhs){
     auto r2 = rhs;
+    
+    // We check to see if we have computed the transitive closure or not
+    if(transitive_closure.size() == 0){
+        findTransitiveClosure();
+    }
     
     // Remove any edges which can be expressed as a composite
     for(unsigned i = 0; i<rhs.size(); ++i){
