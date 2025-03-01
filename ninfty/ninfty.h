@@ -46,9 +46,28 @@ std::vector<std::shared_future<std::unordered_set<std::vector<unsigned>, unsigne
 std::vector<unsigned> GOOD_EDGES;
 unsigned COMPLEXITY = 0;
 std::vector<std::vector<unsigned>> transitive_closure;
+std::vector<unsigned> edgesFromE;
+std::vector<unsigned> edgesToG;
+
+// An algorithm which finds (and updates) the edges which are used for cosaturation generation
+void findCosaturationEdges(){
+    for(unsigned i=0; i<lattice.size(); ++i){
+        if(lattice[i].second == subgroup_dictionary.size()-1){
+            edgesToG.push_back(i);
+        }
+    }
+}
+
+// An algorithm which finds (and updates) the edges which are used for saturation generation
+void findSaturationEdges(){
+    for(unsigned i=0; i<lattice.size(); ++i){
+        if(lattice[i].first == 0){
+            edgesFromE.push_back(i);
+        }
+    }
+}
 
 // An algorithm which finds (and updates) the transitive closre of the lattice elements
-
 void findTransitiveClosure(){
     for(unsigned i=0; i<lattice.size(); ++i){
         std::vector<unsigned> i_row;
@@ -71,7 +90,8 @@ void findTransitiveClosure(){
 
 // An implementation of Rubin's algorithm to find the closure of a collection of norm maps
 // Adapted from https://arxiv.org/pdf/1903.08723 Construction B.1
-std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0){
+// The enum is used to see if we want to use intersection (for normal generation) or cointersections (for saturated generation)
+std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const GenerationType& gen_type = ALL){
     std::set<unsigned> r1_set, r2_set, r4_set;
     
     // We check to see if we have computed the transitive closure or not
@@ -86,8 +106,15 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0){
         
     // Close under intersection
     r2_set = r1_set;
-    for(auto it = r1_set.begin(); it != r1_set.end(); ++it){
-        r2_set.insert(intersections[(*it)].begin(), intersections[(*it)].end());
+    if(gen_type == COSATURATED){
+        for(auto it = r1_set.begin(); it != r1_set.end(); ++it){
+            r2_set.insert(cointersections[(*it)].begin(), cointersections[(*it)].end());
+        }
+    }
+    else{
+        for(auto it = r1_set.begin(); it != r1_set.end(); ++it){
+            r2_set.insert(intersections[(*it)].begin(), intersections[(*it)].end());
+        }
     }
     
     //Close under composition
@@ -114,7 +141,7 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0){
 }
 
 //The thread function which adds new norms to existing transfer systems
-std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(const unsigned& start_index, const unsigned& end_index){
+std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(const unsigned& start_index, const unsigned& end_index, const GenerationType& gen_type = ALL){
     
     std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> temp_new_edges;
     
@@ -139,7 +166,7 @@ std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(
 // A function which finds all transfer systems for the given group as defined in https://arxiv.org/abs/1905.03797
 // Algorithm adapted from CITE
 // The verbose toggle can be used to supress generation statistics
-void transferFind(const bool verbose = true){
+void transferFind(const bool verbose = true, const GenerationType& gen_type = ALL){
     unsigned long old_size = 0;
     unsigned long diff = 1;
     unsigned gen_step = 1;
@@ -148,6 +175,7 @@ void transferFind(const bool verbose = true){
     std::vector<unsigned> empty_transfer{};
     NEW_EDGES.push_back(empty_transfer);
     RESULT.insert(empty_transfer);
+    GOOD_EDGES.clear();
     
     // Manually do the first iteration to find the basis edges, we call these edges "good"
     // Note that this only has an effect when the group G is non-abelian
