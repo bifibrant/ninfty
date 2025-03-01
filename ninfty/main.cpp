@@ -10,5 +10,6 @@
 
 
 int main() {
-    transferFind(true, SATURATED);
+    //transferFind(true, ALL);
+    std::cout << complexity() << std::endl;
 }
