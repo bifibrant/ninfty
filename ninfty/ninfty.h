@@ -93,7 +93,7 @@ void findTransitiveClosure(){
 // The enum is used to see if we want to use intersection (for normal generation) or cointersections (for saturated generation)
 std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const GenerationType& gen_type = ALL){
     std::set<unsigned> r1_set, r2_set, r4_set;
-    
+
     // We check to see if we have computed the transitive closure or not
     if(transitive_closure.size() == 0){
         findTransitiveClosure();
@@ -106,7 +106,7 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const Gen
         
     // Close under intersection
     r2_set = r1_set;
-    if(gen_type == COSATURATED){
+    if(gen_type == SATURATED){
         for(auto it = r1_set.begin(); it != r1_set.end(); ++it){
             r2_set.insert(cointersections[(*it)].begin(), cointersections[(*it)].end());
         }
@@ -152,7 +152,7 @@ std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(
             if(std::find(test.begin(), test.end(), GOOD_EDGES[i]) == test.end()){
                 test.push_back(GOOD_EDGES[i]);
                 
-                auto closed = transferClosure(test);
+                auto closed = transferClosure(test, gen_type);
                 
                 if(!RESULT.contains(closed)){
                     temp_new_edges.insert(closed);
@@ -167,6 +167,10 @@ std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(
 // Algorithm adapted from CITE
 // The verbose toggle can be used to supress generation statistics
 void transferFind(const bool verbose = true, const GenerationType& gen_type = ALL){
+    
+    findSaturationEdges();
+    findCosaturationEdges();
+    
     unsigned long old_size = 0;
     unsigned long diff = 1;
     unsigned gen_step = 1;
@@ -183,16 +187,44 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     
     auto it = NEW_EDGES.begin();
     for(unsigned i=0; i<lattice.size(); ++i){
-        std::vector<unsigned> test{i};
-        test.insert(std::end(test), std::begin((*it)), std::end((*it)));
-        auto closed = transferClosure(test);
-        auto storage_size_old = RESULT.size();
-        RESULT.insert(closed);
-        auto storage_size_new = RESULT.size();
-        
-        if(storage_size_new > storage_size_old){
-            temp_new_edges.push_back(closed);
-            GOOD_EDGES.push_back(i);
+        if(gen_type == ALL){
+            std::vector<unsigned> test{i};
+            test.insert(std::end(test), std::begin((*it)), std::end((*it)));
+            auto closed = transferClosure(test, gen_type);
+            auto storage_size_old = RESULT.size();
+            RESULT.insert(closed);
+            auto storage_size_new = RESULT.size();
+            
+            if(storage_size_new > storage_size_old){
+                temp_new_edges.push_back(closed);
+                GOOD_EDGES.push_back(i);
+            }
+        }
+        else if((gen_type == SATURATED) & std::find(edgesFromE.begin(), edgesFromE.end(), i) != edgesFromE.end()){
+            std::vector<unsigned> test{i};
+            test.insert(std::end(test), std::begin((*it)), std::end((*it)));
+            auto closed = transferClosure(test, gen_type);
+            auto storage_size_old = RESULT.size();
+            RESULT.insert(closed);
+            auto storage_size_new = RESULT.size();
+            
+            if(storage_size_new > storage_size_old){
+                temp_new_edges.push_back(closed);
+                GOOD_EDGES.push_back(i);
+            }
+        }
+        else if(((gen_type == COSATURATED) & std::find(edgesToG.begin(), edgesToG.end(), i) != edgesToG.end())){
+            std::vector<unsigned> test{i};
+            test.insert(std::end(test), std::begin((*it)), std::end((*it)));
+            auto closed = transferClosure(test, gen_type);
+            auto storage_size_old = RESULT.size();
+            RESULT.insert(closed);
+            auto storage_size_new = RESULT.size();
+            
+            if(storage_size_new > storage_size_old){
+                temp_new_edges.push_back(closed);
+                GOOD_EDGES.push_back(i);
+            }
         }
     }
     
@@ -215,7 +247,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         
         THREAD_STORE.clear();
         for(unsigned i=0; i<NUM_THREADS; ++i){
-            std::shared_future<std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher>> new_thread = std::async(std::launch::async, threadProcess, i*step, std::min((i+1)*step, unsigned(lattice.size())));
+            std::shared_future<std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher>> new_thread = std::async(std::launch::async, threadProcess, i*step, std::min((i+1)*step, unsigned(lattice.size())), gen_type);
             THREAD_STORE.push_back(new_thread);
         }
         
