@@ -100,22 +100,26 @@ for i in Q:
 intersection_string = intersection_string[:-2]
 intersection_string += "\n}; \n \n"
 
-# Want to find the transitive closures for i=(A,B) and j=(C,D) the entry [i][j] gives the k which is the transitive closure, or min(i,j) else.
-composite_string = "std::vector<std::vector<unsigned>> transitive_closure{\n"
-for num, i in enumerate(Q):
-    print("//Composite: Checking edge ", num, "out of", len(Q)-1)
-    composite_string += "{"
-    for j in Q:
-        ind = min(Q.index(i),Q.index(j))
-        if i[1] == j[0] and i != j:
-            test_el = [i[0],j[1]]
-            if test_el in Q:
-                ind = Q.index(test_el)
-        composite_string += str(ind) + ","
-    composite_string = composite_string[:-1]
-    composite_string += "},\n"
-composite_string = composite_string[:-2]
-composite_string += "\n};"
+# This takes in i = (K,H) from the lattice and spits out the unique (L \cap K, L)) = j where L<=H in the dual lattice
+cointersection_string = "std::vector<std::vector<unsigned>> cointersections{\n"
+for i in Q:
+    print("//CoIntersection: Checking edge ", Q.index(i), "out of", len(Q)-1)
+    temp_store = []
+    for l in L.list():
+        if L.is_greater_than(l,i[0]):
+            p1 = L.join(l, i[1])
+            p2 = l
+            if p1 != p2:
+                temp_store.append([p2,p1])
+    cointersection_string += "{"
+
+    for el in temp_store:
+        cointersection_string += str(Q.index(el)) + ","
+    if len(temp_store) > 0:
+        cointersection_string = cointersection_string[:-1]
+    cointersection_string += "},\n"
+cointersection_string = cointersection_string[:-2]
+cointersection_string += "\n}; \n \n"
 
 with open(group_name + ".h" , 'w') as f:
     f.write("#include <vector>\n")
@@ -126,5 +130,3 @@ with open(group_name + ".h" , 'w') as f:
     f.write(conjugate_string)
     f.write("\n")
     f.write(intersection_string)
-    f.write("\n")
-    f.write(composite_string)
