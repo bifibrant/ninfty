@@ -1,7 +1,6 @@
 G = PermutationGroup(gap_group = gap.SmallGroup(12,3).AsPermGroup())
 
-# Set the file name
-group_name = "A4"
+group_name = "Cpqrs"
 
 sub = G.subgroups()
 f = lambda h,k: h.is_subgroup(k)
@@ -27,50 +26,63 @@ for H in sub:
     
 for g in G:
     gap_dict_elements[g] = gap(g)
-    
-for i, H in enumerate(sub):
-    print("//Conjugation: Building subgroup ", i, " out of", len(sub))
-    for g in G:
-        Hg = gap_dict_subgroups[H]^gap_dict_elements[g]
-        for K in sub:
-            if gap_dict_subgroups[K] == Hg:
-                sageHg = K
-                break
-        conj_data[(H,g)] = K
 
+if not gap.IsAbelian(gap(G)):
+    for i, H in enumerate(sub):
+        print("//Conjugation: Building subgroup ", i, " out of", len(sub))
+        for g in G:
+            Hg = gap_dict_subgroups[H]^gap_dict_elements[g]
+            for K in sub:
+                if gap_dict_subgroups[K] == Hg:
+                    sageHg = K
+                    break
+            conj_data[(H,g)] = K
+else:
+    for i, H in enumerate(sub):
+        for g in G:
+            conj_data[(H,g)] = H
+    
 conj_complex = {}
 
 # Compute the conjugates
-for i, edge in enumerate(Q):
-    print("//Conjugation: Checking edge ", i, "out of", len(Q))
-    conjugate_string += "{"
-    if i not in conj_complex:
-        conj_store = [Q.index(edge)]
-        for g in G:
-            sageHg = conj_data[(edge[0],g)]
-            sageKg = conj_data[(edge[1],g)]
-            HgKgedge = [sageHg, sageKg]
-            if edge != HgKgedge:
-                conj_store.append(Q.index(HgKgedge))
-        conj_store = list(dict.fromkeys(conj_store))
-        conj_complex[i] = conj_store
-        for el in conj_complex[i]:
-            if el not in conj_complex:
-                conj_complex[el] = conj_complex[i].copy()
-    for p in conj_complex[i]:
-        conjugate_string += str(p) + ","
-    if conjugate_string[-1] != '{':
-        conjugate_string = conjugate_string[:-1]
-    conjugate_string += "},\n"
-conjugate_string = conjugate_string[:-2]
-conjugate_string += "\n};\n \n"
+
+if not gap.IsAbelian(gap(G)):
+    for i, edge in enumerate(Q):
+        print("//Conjugation: Checking edge ", i, "out of", len(Q))
+        conjugate_string += "{"
+        if i not in conj_complex:
+            conj_store = [Q.index(edge)]
+            for g in G:
+                sageHg = conj_data[(edge[0],g)]
+                sageKg = conj_data[(edge[1],g)]
+                HgKgedge = [sageHg, sageKg]
+                if edge != HgKgedge:
+                    conj_store.append(Q.index(HgKgedge))
+            conj_store = list(dict.fromkeys(conj_store))
+            conj_complex[i] = conj_store
+            for el in conj_complex[i]:
+                if el not in conj_complex:
+                    conj_complex[el] = conj_complex[i].copy()
+        for p in conj_complex[i]:
+            conjugate_string += str(p) + ","
+        if conjugate_string[-1] != '{':
+            conjugate_string = conjugate_string[:-1]
+        conjugate_string += "},\n"
+    conjugate_string = conjugate_string[:-2]
+    conjugate_string += "};\n \n"
+
+else:
+    for i, edge in enumerate(Q):
+        conjugate_string += "{" + str(i) + "},\n"
+    conjugate_string = conjugate_string[:-2]
+    conjugate_string += "};\n \n"
 
 dictionary_string = "std::vector<std::string> subgroup_dictionary{\n"
 for i in range(0,len(sub)):
     
     dictionary_string += "\"" + str(sub[i].structure_description()) + "\",\n"
 dictionary_string = dictionary_string[:-2]
-dictionary_string += "\n};\n\n"
+dictionary_string += "\n};\n"
 
 lattice_string = "std::vector<std::pair<unsigned, unsigned>> lattice{\n"
 for el in Q:
@@ -101,6 +113,7 @@ intersection_string = intersection_string[:-2]
 intersection_string += "\n}; \n \n"
 
 # This takes in i = (K,H) from the lattice and spits out the unique (L \cap K, L)) = j where L<=H in the dual lattice
+# This is essential for the computation of saturated transfer systems (in the non Dedekind case) (Need to add a dedekind check)
 cointersection_string = "std::vector<std::vector<unsigned>> cointersections{\n"
 for i in Q:
     print("//CoIntersection: Checking edge ", Q.index(i), "out of", len(Q)-1)
@@ -122,7 +135,7 @@ cointersection_string = cointersection_string[:-2]
 cointersection_string += "\n}; \n \n"
 
 with open(group_name + ".h" , 'w') as f:
-    f.write("#include <vector>\n")
+    f.write("#include <vector>\n\n")
     f.write(dictionary_string)
     f.write("\n")
     f.write(lattice_string)
@@ -130,3 +143,5 @@ with open(group_name + ".h" , 'w') as f:
     f.write(conjugate_string)
     f.write("\n")
     f.write(intersection_string)
+    f.write("\n")
+    f.write(cointersection_string)

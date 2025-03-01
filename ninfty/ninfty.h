@@ -37,14 +37,20 @@ public:
 
 // Variable which stores all requested transfer systems
 std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> RESULT;
+std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> ALL_STORE;
+std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> SATURATED_STORE;
+std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> COSATURATED_STORE;
 
+// Variable which stores the complexity of the requested computation
+unsigned ALL_COMPLEXITY = 0;
+unsigned SATURATED_COMPLEXITY = 0;
+unsigned COSATURATED_COMPLEXITY = 0;
 
 // Setting up global variables and constants
 unsigned NUM_THREADS = unsigned(lattice.size());
 std::vector<std::vector<unsigned>> NEW_EDGES;
 std::vector<std::shared_future<std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher>>> THREAD_STORE;
 std::vector<unsigned> GOOD_EDGES;
-unsigned COMPLEXITY = 0;
 std::vector<std::vector<unsigned>> transitive_closure;
 std::vector<unsigned> edgesFromE;
 std::vector<unsigned> edgesToG;
@@ -269,7 +275,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         gen_step++;
     }
     // Store the generation step as the complexity
-    COMPLEXITY = gen_step-1;
+    ALL_COMPLEXITY = gen_step-1;
 }
 
 // An implementation of Rubin's algorithm in reverse
@@ -337,12 +343,12 @@ unsigned width(){
 }
 
 unsigned complexity(){
-    if(COMPLEXITY != 0){
-        return COMPLEXITY;
+    if(ALL_COMPLEXITY != 0){
+        return ALL_COMPLEXITY;
     }
     else{
         transferFind(false);
-        return COMPLEXITY;
+        return ALL_COMPLEXITY;
     }
 }
 
