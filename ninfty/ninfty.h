@@ -498,7 +498,7 @@ unsigned computeMeet(const unsigned& A, const unsigned& B){
         }
     }
     
-    //The unique! maximal element will be the one that doesn't appear as the target of any of the edges
+    //The unique maximal element will be the one that doesn't appear as the target of any of the edges
     for(unsigned i=0; i<common_lower_elements.size(); ++i){
         bool is_maximal = true;
         for(unsigned j=0; j<common_lower_elements.size(); ++j){
@@ -512,13 +512,44 @@ unsigned computeMeet(const unsigned& A, const unsigned& B){
             return common_lower_elements[i];
         }
     }
-    
     return 0;
 }
 
 // A function which determines if a pair of transfer systems is compatible in the sense of CITE
 bool isCompatible(const std::pair<unsigned,unsigned> rhs){
-    return false;
+    
+    // rhs.first = multiplicative
+    // rhs.second = additive
+    auto transfer_m = ALL_STORE[rhs.first];
+    auto transfer_a = ALL_STORE[rhs.second];
+    
+    if(transfer_m.size() == 0){return true;}
+    if(transfer_a.size() == lattice.size()){return true;}
+    
+    for(unsigned i=0; i<transfer_m.size(); ++i){
+        unsigned B = lattice[transfer_m[i]].first;
+        unsigned A = lattice[transfer_m[i]].second;
+        for(unsigned C=0; C<subgroup_dictionary.size(); ++C){
+            // Construct the potential edge C->A
+            std::pair<unsigned,unsigned> temp{C,A};
+            if(std::find(lattice.begin(), lattice.end(), temp) != lattice.end()){
+                // We now want to check if B \cap C is in transfer_a
+                std::pair<unsigned, unsigned> test_edge{computeMeet(B, C),B};
+                unsigned test_edge_index = unsigned(std::find(lattice.begin(), lattice.end(), test_edge) - lattice.begin());
+                if((std::find(transfer_a.begin(), transfer_a.end(), test_edge_index) != transfer_a.end()) || (computeMeet(B, C) == B)){
+                    // Now check that C -> A is in transfer_a
+                    std::pair<unsigned, unsigned> test_edge2{C,A};
+                    unsigned test_edge_index2 = unsigned(std::find(lattice.begin(), lattice.end(), test_edge2) - lattice.begin());
+                    // If we do not find this transfer then we are not compatible
+                    if(std::find(transfer_a.begin(), transfer_a.end(), test_edge_index2) == transfer_a.end()){
+                        return false;
+                    }
+                }
+                
+            }
+        }
+    }
+    return true;
 }
 
 // Implementation ToDo
