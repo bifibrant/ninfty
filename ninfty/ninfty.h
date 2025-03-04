@@ -474,12 +474,55 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     return resultant_lattice;
 }
 
+// An algorithm to comptue the meet (i.e., intersection) of two subgroups A and B
+unsigned computeMeet(const unsigned& A, const unsigned& B){
+    if(A == B){
+        return A;
+    }
+    std::pair<unsigned,unsigned> test_element{A,B};
+    if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
+        return A;
+    }
+    test_element = {A,B};
+    if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
+        return B;
+    }
+    
+    std::vector<unsigned> common_lower_elements;
+    
+    for(unsigned i=0; i<subgroup_dictionary.size(); ++i){
+        std::pair<unsigned,unsigned> temp1{i,A};
+        std::pair<unsigned,unsigned> temp2{i,B};
+        if(std::find(lattice.begin(),lattice.end(),temp1) != lattice.end() & std::find(lattice.begin(),lattice.end(),temp2) != lattice.end()){
+            common_lower_elements.push_back(i);
+        }
+    }
+    
+    //The unique! maximal element will be the one that doesn't appear as the target of any of the edges
+    for(unsigned i=0; i<common_lower_elements.size(); ++i){
+        bool is_maximal = true;
+        for(unsigned j=0; j<common_lower_elements.size(); ++j){
+            std::pair<unsigned,unsigned> temp3{common_lower_elements[i], common_lower_elements[j]};
+            if(std::find(lattice.begin(),lattice.end(),temp3) != lattice.end()){
+                is_maximal = false;
+                break;
+            }
+        }
+        if(is_maximal){
+            return common_lower_elements[i];
+        }
+    }
+    
+    return 0;
+}
+
 // A function which determines if a pair of transfer systems is compatible in the sense of CITE
 bool isCompatible(const std::pair<unsigned,unsigned> rhs){
     return false;
 }
 
 // Implementation ToDo
+// Dynamically save all of the meets and joins
 // General functions for people to access results
 // Compatible pairs:
     // Compatibility check
