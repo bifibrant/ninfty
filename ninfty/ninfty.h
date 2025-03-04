@@ -19,6 +19,16 @@
 
 enum GenerationType{ ALL, SATURATED, COSATURATED };
 
+// A function which determines if one std::vector<T> is contained in another
+template <typename T>
+bool isSubsetOrEqual(std::vector<T> const& a, std::vector<T> const& b) {
+    for(auto const& av:a){
+        if(std::find(b.begin(),b.end(),av)==b.end())
+            return false;
+    }
+    return true;
+}
+
 // Hash function for vectors of unsigned int.
 // Taken from https://stackoverflow.com/a/12996028
 class unsigned_vector_hasher {
@@ -35,11 +45,11 @@ public:
     }
 };
 
-// Variable which stores all requested transfer systems
+// Variables which stores all requested transfer systems
 std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> RESULT;
-std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> ALL_STORE;
-std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> SATURATED_STORE;
-std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> COSATURATED_STORE;
+std::vector<std::vector<unsigned>> ALL_STORE;
+std::vector<std::vector<unsigned>> SATURATED_STORE;
+std::vector<std::vector<unsigned>> COSATURATED_STORE;
 
 // Variable which stores the complexity of the requested computation
 unsigned ALL_COMPLEXITY = 0;
@@ -57,6 +67,7 @@ std::vector<unsigned> edgesToG;
 
 // An algorithm which finds (and updates) the edges which are used for cosaturation generation
 void findCosaturationEdges(){
+    edgesToG.clear();
     for(unsigned i=0; i<lattice.size(); ++i){
         if(lattice[i].second == subgroup_dictionary.size()-1){
             edgesToG.push_back(i);
@@ -66,6 +77,7 @@ void findCosaturationEdges(){
 
 // An algorithm which finds (and updates) the edges which are used for saturation generation
 void findSaturationEdges(){
+    edgesFromE.clear();
     for(unsigned i=0; i<lattice.size(); ++i){
         if(lattice[i].first == 0){
             edgesFromE.push_back(i);
@@ -278,18 +290,39 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     // Store the generation step as the complexity
     if(gen_type == ALL){
         ALL_COMPLEXITY = gen_step-1;
-        ALL_STORE = RESULT;
+        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(ALL_STORE));
     }
     else if(gen_type == SATURATED){
         SATURATED_COMPLEXITY = gen_step-1;
-        SATURATED_STORE = RESULT;
+        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(SATURATED_STORE));
     }
     else if(gen_type == COSATURATED){
         COSATURATED_COMPLEXITY = gen_step-1;
-        COSATURATED_STORE = RESULT;
+        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(COSATURATED_STORE));
     }
     RESULT.clear();
     NEW_EDGES.clear();
+}
+
+std::vector<std::vector<unsigned>> allTransfers(){
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    return ALL_STORE;
+}
+
+std::vector<std::vector<unsigned>> saturatedTransfers(){
+    if(SATURATED_STORE.size() == 0){
+        transferFind(false, SATURATED);
+    }
+    return SATURATED_STORE;
+}
+
+std::vector<std::vector<unsigned>> cosaturatedTransfers(){
+    if(COSATURATED_STORE.size() == 0){
+        transferFind(false, COSATURATED);
+    }
+    return COSATURATED_STORE;
 }
 
 // An implementation of Rubin's algorithm in reverse
@@ -387,7 +420,45 @@ unsigned complexity(const GenerationType& gen_type = ALL){
     return 0;
 }
 
+bool isSaturated(const std::vector<unsigned>& rhs){
+    std::vector<unsigned> test_basis;
+    for(unsigned i=0; i<rhs.size(); ++i){
+        if(lattice[rhs[i]].first == 0){
+            test_basis.push_back(rhs[i]);
+        }
+    }
+    return (transferClosure(test_basis, SATURATED) == rhs);
+}
+
+bool isCosaturated(const std::vector<unsigned>& rhs){
+    std::vector<unsigned> test_basis;
+    for(unsigned i=0; i<rhs.size(); ++i){
+        if(lattice[rhs[i]].second == subgroup_dictionary.size()-1){
+            test_basis.push_back(rhs[i]);
+        }
+    }
+    return (transferClosure(test_basis, COSATURATED) == rhs);
+}
+
+// A function which returns pairs (i,j) such that ALL_TRANSFERS[i] <= ALL_TRANSFERS[j]. Required for model structures and compatible pairs
+std::vector<std::pair<unsigned,unsigned>> transferLattice(){
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    std::vector<std::pair<unsigned,unsigned>> resultant_lattice;
+    
+    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+        for(unsigned j=0; j<ALL_STORE.size(); ++j){
+            if(isSubsetOrEqual(ALL_STORE[i], ALL_STORE[j])){
+                resultant_lattice.push_back({i,j});
+            }
+        }
+    }
+    return resultant_lattice;
+}
+
 // Implementation ToDo
+// General functions for people to access results
 // Compatible pairs:
     // Compatibility check
     // Intervals of xfer systems
@@ -399,13 +470,15 @@ unsigned complexity(const GenerationType& gen_type = ALL){
     // Weak equivalences
     // Model check
     // Composition closed check
-// bool isSaturated
-// bool isCosaturated
+// bool isSaturated ✓
+// bool isCosaturated ✓
 // return maximally generated things
 // Involution of transfer systems (only in the cyclic case)
 // (co)saturated hull
 // Minimal "fibrant" node
 // Flat transfer systems
+// Saving data from the code
+// TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
 
 
 #endif /* ninfty_h */
