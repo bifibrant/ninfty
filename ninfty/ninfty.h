@@ -483,7 +483,7 @@ unsigned computeMeet(const unsigned& A, const unsigned& B){
     if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
         return A;
     }
-    test_element = {A,B};
+    test_element = {B,A};
     if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
         return B;
     }
@@ -533,10 +533,12 @@ bool isCompatible(const std::pair<unsigned,unsigned> rhs){
             // Construct the potential edge C->A
             std::pair<unsigned,unsigned> temp{C,A};
             if(std::find(lattice.begin(), lattice.end(), temp) != lattice.end()){
+                
                 // We now want to check if B \cap C is in transfer_a
                 std::pair<unsigned, unsigned> test_edge{computeMeet(B, C),B};
                 unsigned test_edge_index = unsigned(std::find(lattice.begin(), lattice.end(), test_edge) - lattice.begin());
-                if((std::find(transfer_a.begin(), transfer_a.end(), test_edge_index) != transfer_a.end()) || (computeMeet(B, C) == B)){
+                
+                if((std::find(transfer_a.begin(), transfer_a.end(), test_edge_index) != transfer_a.end()) || ((computeMeet(B, C) == B))){
                     // Now check that C -> A is in transfer_a
                     std::pair<unsigned, unsigned> test_edge2{C,A};
                     unsigned test_edge_index2 = unsigned(std::find(lattice.begin(), lattice.end(), test_edge2) - lattice.begin());
