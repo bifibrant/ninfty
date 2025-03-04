@@ -5,10 +5,10 @@
 //  Created by Scott Balchin on 19/02/2025.
 //
 
-#include "group_data/Cpqr.h"
+#include "group_data/Cp2.h"
 #include "ninfty.h"
 
 
 int main() {
-    std::cout << allTransfers().size() << std::endl;    
+    auto sat_storage = saturatedTransfers();
 }

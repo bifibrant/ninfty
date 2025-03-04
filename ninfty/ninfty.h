@@ -46,9 +46,11 @@ public:
 };
 
 // Variables which stores all requested transfer systems
+// Note that OPPOSITE_SATURATED_STORE stores the "cosatuated transfer systems" on the opposite lattice and does not actually give the saturated transfer systems
 std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> RESULT;
 std::vector<std::vector<unsigned>> ALL_STORE;
 std::vector<std::vector<unsigned>> SATURATED_STORE;
+std::vector<std::vector<unsigned>> OPPOSITE_SATURATED_STORE;
 std::vector<std::vector<unsigned>> COSATURATED_STORE;
 
 // Variable which stores the complexity of the requested computation
@@ -294,7 +296,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     }
     else if(gen_type == SATURATED){
         SATURATED_COMPLEXITY = gen_step-1;
-        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(SATURATED_STORE));
+        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(OPPOSITE_SATURATED_STORE));
     }
     else if(gen_type == COSATURATED){
         COSATURATED_COMPLEXITY = gen_step-1;
@@ -311,9 +313,34 @@ std::vector<std::vector<unsigned>> allTransfers(){
     return ALL_STORE;
 }
 
+// Need to check for the two-out-of-three property
+bool isSaturated(const std::vector<unsigned>& rhs){
+    for(unsigned i=0; i<rhs.size(); ++i){
+        for(unsigned j=0; j<rhs.size(); ++j){
+            if(lattice[rhs[i]].first == lattice[rhs[j]].first and lattice[rhs[i]].second != lattice[rhs[j]].second){
+                std::pair<unsigned,unsigned> to_find{lattice[rhs[i]].second, lattice[rhs[j]].second};
+                if(std::find(lattice.begin(), lattice.end(), to_find) != lattice.end()){
+                    auto it = find(lattice.begin(), lattice.end(), to_find);
+                    unsigned index = unsigned(it - lattice.begin());
+                    if(std::find(rhs.begin(), rhs.end(), index) == rhs.end()){
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
 std::vector<std::vector<unsigned>> saturatedTransfers(){
-    if(SATURATED_STORE.size() == 0){
-        transferFind(false, SATURATED);
+    SATURATED_STORE.clear();
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    for(unsigned i = 0; i <ALL_STORE.size(); ++i){
+        if(isSaturated(ALL_STORE[i])){
+            SATURATED_STORE.push_back(ALL_STORE[i]);
+        }
     }
     return SATURATED_STORE;
 }
@@ -420,16 +447,6 @@ unsigned complexity(const GenerationType& gen_type = ALL){
     return 0;
 }
 
-bool isSaturated(const std::vector<unsigned>& rhs){
-    std::vector<unsigned> test_basis;
-    for(unsigned i=0; i<rhs.size(); ++i){
-        if(lattice[rhs[i]].first == 0){
-            test_basis.push_back(rhs[i]);
-        }
-    }
-    return (transferClosure(test_basis, SATURATED) == rhs);
-}
-
 bool isCosaturated(const std::vector<unsigned>& rhs){
     std::vector<unsigned> test_basis;
     for(unsigned i=0; i<rhs.size(); ++i){
@@ -457,14 +474,19 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     return resultant_lattice;
 }
 
+// A function which determines if a pair of transfer systems is compatible in the sense of CITE
+bool isCompatible(const std::pair<unsigned,unsigned> rhs){
+    return false;
+}
+
 // Implementation ToDo
 // General functions for people to access results
 // Compatible pairs:
     // Compatibility check
-    // Intervals of xfer systems
+    // Intervals of xfer systems ✓
     // All compatible intervals
 // Model structures:
-    // Intervals of xfer systems
+    // Intervals of xfer systems ✓
     // Left set
     // Extension + complements
     // Weak equivalences
