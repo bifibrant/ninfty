@@ -172,6 +172,7 @@ std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(
 // A function which finds all transfer systems for the given group as defined in https://arxiv.org/abs/1905.03797
 // Algorithm adapted from CITE
 // The verbose toggle can be used to supress generation statistics
+// The gen_type adjusts if it is all, saturated, or cosaturated as required
 void transferFind(const bool verbose = true, const GenerationType& gen_type = ALL){
     
     findSaturationEdges();
@@ -386,6 +387,25 @@ unsigned complexity(const GenerationType& gen_type = ALL){
     return 0;
 }
 
+// Implementation ToDo
+// Compatible pairs:
+    // Compatibility check
+    // Intervals of xfer systems
+    // All compatible intervals
+// Model structures:
+    // Intervals of xfer systems
+    // Left set
+    // Extension + complements
+    // Weak equivalences
+    // Model check
+    // Composition closed check
+// bool isSaturated
+// bool isCosaturated
+// return maximally generated things
+// Involution of transfer systems (only in the cyclic case)
+// (co)saturated hull
+// Minimal "fibrant" node
+// Flat transfer systems
 
 
 #endif /* ninfty_h */
