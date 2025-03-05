@@ -45,6 +45,9 @@ public:
     }
 };
 
+// Variable which stores the array of meets
+std::vector<std::vector<unsigned>> meetArray;
+
 // Variables which stores all requested transfer systems
 // Note that OPPOSITE_SATURATED_STORE stores the "cosatuated transfer systems" on the opposite lattice and does not actually give the saturated transfer systems
 std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> RESULT;
@@ -106,7 +109,57 @@ void findTransitiveClosure(){
     }
 }
 
+// An algorithm to comptue the meet (i.e., intersection) of two subgroups A and B
+unsigned computeMeet(const unsigned& A, const unsigned& B){
+    if(A == B){
+        return A;
+    }
+    std::pair<unsigned,unsigned> test_element{A,B};
+    if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
+        return A;
+    }
+    test_element = {B,A};
+    if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
+        return B;
+    }
+    
+    std::vector<unsigned> common_lower_elements;
+    
+    for(unsigned i=0; i<subgroup_dictionary.size(); ++i){
+        std::pair<unsigned,unsigned> temp1{i,A};
+        std::pair<unsigned,unsigned> temp2{i,B};
+        if(std::find(lattice.begin(),lattice.end(),temp1) != lattice.end() & std::find(lattice.begin(),lattice.end(),temp2) != lattice.end()){
+            common_lower_elements.push_back(i);
+        }
+    }
+    
+    //The unique maximal element will be the one that doesn't appear as the target of any of the edges
+    for(unsigned i=0; i<common_lower_elements.size(); ++i){
+        bool is_maximal = true;
+        for(unsigned j=0; j<common_lower_elements.size(); ++j){
+            std::pair<unsigned,unsigned> temp3{common_lower_elements[i], common_lower_elements[j]};
+            if(std::find(lattice.begin(),lattice.end(),temp3) != lattice.end()){
+                is_maximal = false;
+                break;
+            }
+        }
+        if(is_maximal){
+            return common_lower_elements[i];
+        }
+    }
+    return 0;
+}
 
+void computeMeetArray(){
+    meetArray.clear();
+    for(unsigned i = 0; i < subgroup_dictionary.size(); ++i){
+        std::vector<unsigned> temp;
+        for(unsigned j = 0; j < subgroup_dictionary.size(); ++j){
+            temp.push_back(computeMeet(i, j));
+        }
+        meetArray.push_back(temp);
+    }
+}
 
 // An implementation of Rubin's algorithm to find the closure of a collection of norm maps
 // Adapted from https://arxiv.org/pdf/1903.08723 Construction B.1
@@ -191,6 +244,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     
     findSaturationEdges();
     findCosaturationEdges();
+    computeMeetArray();
     
     unsigned long old_size = 0;
     unsigned long diff = 1;
@@ -289,18 +343,21 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         diff = RESULT.size() - old_size;
         gen_step++;
     }
-    // Store the generation step as the complexity
+    // Store the generation step as the complexity, and sort the arrays for ease of browsing later
     if(gen_type == ALL){
         ALL_COMPLEXITY = gen_step-1;
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(ALL_STORE));
+        std::sort(ALL_STORE.begin(), ALL_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     else if(gen_type == SATURATED){
         SATURATED_COMPLEXITY = gen_step-1;
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(OPPOSITE_SATURATED_STORE));
+        std::sort(OPPOSITE_SATURATED_STORE.begin(), OPPOSITE_SATURATED_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     else if(gen_type == COSATURATED){
         COSATURATED_COMPLEXITY = gen_step-1;
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(COSATURATED_STORE));
+        std::sort(COSATURATED_STORE.begin(), COSATURATED_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     RESULT.clear();
     NEW_EDGES.clear();
@@ -464,8 +521,9 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     }
     std::vector<std::pair<unsigned,unsigned>> resultant_lattice;
     
+    // As we have ordered the storage we can browse only those things above  ALL_STORE[i] (inclusive)
     for(unsigned i=0; i<ALL_STORE.size(); ++i){
-        for(unsigned j=0; j<ALL_STORE.size(); ++j){
+        for(unsigned j=i; j<ALL_STORE.size(); ++j){
             if(isSubsetOrEqual(ALL_STORE[i], ALL_STORE[j])){
                 resultant_lattice.push_back({i,j});
             }
@@ -474,46 +532,7 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     return resultant_lattice;
 }
 
-// An algorithm to comptue the meet (i.e., intersection) of two subgroups A and B
-unsigned computeMeet(const unsigned& A, const unsigned& B){
-    if(A == B){
-        return A;
-    }
-    std::pair<unsigned,unsigned> test_element{A,B};
-    if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
-        return A;
-    }
-    test_element = {B,A};
-    if(std::find(lattice.begin(),lattice.end(),test_element) != lattice.end()){
-        return B;
-    }
-    
-    std::vector<unsigned> common_lower_elements;
-    
-    for(unsigned i=0; i<subgroup_dictionary.size(); ++i){
-        std::pair<unsigned,unsigned> temp1{i,A};
-        std::pair<unsigned,unsigned> temp2{i,B};
-        if(std::find(lattice.begin(),lattice.end(),temp1) != lattice.end() & std::find(lattice.begin(),lattice.end(),temp2) != lattice.end()){
-            common_lower_elements.push_back(i);
-        }
-    }
-    
-    //The unique maximal element will be the one that doesn't appear as the target of any of the edges
-    for(unsigned i=0; i<common_lower_elements.size(); ++i){
-        bool is_maximal = true;
-        for(unsigned j=0; j<common_lower_elements.size(); ++j){
-            std::pair<unsigned,unsigned> temp3{common_lower_elements[i], common_lower_elements[j]};
-            if(std::find(lattice.begin(),lattice.end(),temp3) != lattice.end()){
-                is_maximal = false;
-                break;
-            }
-        }
-        if(is_maximal){
-            return common_lower_elements[i];
-        }
-    }
-    return 0;
-}
+
 
 // A function which determines if a pair of transfer systems is compatible in the sense of CITE
 bool isCompatible(const std::pair<unsigned,unsigned> rhs){
@@ -529,16 +548,17 @@ bool isCompatible(const std::pair<unsigned,unsigned> rhs){
     for(unsigned i=0; i<transfer_m.size(); ++i){
         unsigned B = lattice[transfer_m[i]].first;
         unsigned A = lattice[transfer_m[i]].second;
-        for(unsigned C=0; C<subgroup_dictionary.size(); ++C){
+        // As the subgroups are ordered by size we need only check those subgroups that appear before A
+        for(unsigned C=0; C<A; ++C){
             // Construct the potential edge C->A
             std::pair<unsigned,unsigned> temp{C,A};
             if(std::find(lattice.begin(), lattice.end(), temp) != lattice.end()){
                 
                 // We now want to check if B \cap C is in transfer_a
-                std::pair<unsigned, unsigned> test_edge{computeMeet(B, C),B};
+                std::pair<unsigned, unsigned> test_edge{meetArray[C][B],B};
                 unsigned test_edge_index = unsigned(std::find(lattice.begin(), lattice.end(), test_edge) - lattice.begin());
                 
-                if((std::find(transfer_a.begin(), transfer_a.end(), test_edge_index) != transfer_a.end()) || ((computeMeet(B, C) == B))){
+                if((std::find(transfer_a.begin(), transfer_a.end(), test_edge_index) != transfer_a.end()) || ((meetArray[B][C] == B))){
                     // Now check that C -> A is in transfer_a
                     std::pair<unsigned, unsigned> test_edge2{C,A};
                     unsigned test_edge_index2 = unsigned(std::find(lattice.begin(), lattice.end(), test_edge2) - lattice.begin());
@@ -558,9 +578,9 @@ bool isCompatible(const std::pair<unsigned,unsigned> rhs){
 // Dynamically save all of the meets and joins
 // General functions for people to access results
 // Compatible pairs:
-    // Compatibility check
+    // Compatibility check ✓
     // Intervals of xfer systems ✓
-    // All compatible intervals
+    // All compatible intervals (Could code in parallel?)
 // Model structures:
     // Intervals of xfer systems ✓
     // Left set

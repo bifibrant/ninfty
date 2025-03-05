@@ -11,6 +11,7 @@
 
 int main() {
     transferFind(false, ALL);
+    
     auto lattice_storage = transferLattice();
     unsigned counter = 0;
     
