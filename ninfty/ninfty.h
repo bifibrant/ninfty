@@ -516,24 +516,44 @@ bool isCosaturated(const std::vector<unsigned>& rhs){
     return (transferClosure(test_basis, COSATURATED) == rhs);
 }
 
-// A function which returns pairs (i,j) such that ALL_TRANSFERS[i] <= ALL_TRANSFERS[j]. Required for model structures and compatible pairs
-std::vector<std::pair<unsigned,unsigned>> transferLattice(){
-    if(ALL_STORE.size() == 0){
-        transferFind(false, ALL);
-    }
+// A thread function that checks inclusions
+std::vector<std::pair<unsigned,unsigned>> batchTransferLattice(const unsigned& start_index, const unsigned& end_index){
     std::vector<std::pair<unsigned,unsigned>> resultant_lattice;
     
-    // As we have ordered the storage we can browse only those things above  ALL_STORE[i] (inclusive)
-    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+    for(unsigned i=start_index; i<end_index; ++i){
         for(unsigned j=i; j<ALL_STORE.size(); ++j){
             if(isSubsetOrEqual(ALL_STORE[i], ALL_STORE[j])){
                 resultant_lattice.push_back({i,j});
             }
         }
     }
-    TRANSFER_LATTICE = resultant_lattice;
     return resultant_lattice;
 }
+
+
+// A function which returns pairs (i,j) such that ALL_TRANSFERS[i] <= ALL_TRANSFERS[j]. Required for model structures and compatible pairs
+std::vector<std::pair<unsigned,unsigned>> transferLattice(){
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    
+    std::vector<std::shared_future<std::vector<std::pair<unsigned,unsigned>>>> LATTICE_THREAD_STORE;
+    unsigned step = ceil(double(ALL_STORE.size()) / double(NUM_THREADS));
+    for(unsigned i=0; i<NUM_THREADS; ++i){
+        std::shared_future<std::vector<std::pair<unsigned,unsigned>>> new_thread = std::async(std::launch::async, batchTransferLattice, i*step, std::min((i+1)*step, unsigned(ALL_STORE.size())));
+        LATTICE_THREAD_STORE.push_back(new_thread);
+    }
+    std::vector<std::pair<unsigned,unsigned>> result;
+    
+    for(unsigned i = 0; i < NUM_THREADS; ++i){
+        result.insert(result.end(), LATTICE_THREAD_STORE[i].get().begin(),LATTICE_THREAD_STORE[i].get().end());
+    }
+    TRANSFER_LATTICE = result;
+    return result;
+}
+
+
+
 
 
 
@@ -614,10 +634,10 @@ std::vector<unsigned> compatiblePairs(){
 // General functions for people to access results
 // Compatible pairs:
     // Compatibility check ✓
-    // Intervals of xfer systems ✓
+    // Intervals of xfer systems (extend to parallel) ✓
     // All compatible intervals (Could code in parallel?) ✓
 // Model structures:
-    // Intervals of xfer systems ✓
+    // Intervals of xfer systems (extend to parallel) ✓
     // Left set
     // Extension + complements
     // Weak equivalences
