@@ -530,7 +530,6 @@ std::vector<std::pair<unsigned,unsigned>> batchTransferLattice(const unsigned& s
     return resultant_lattice;
 }
 
-
 // A function which returns pairs (i,j) such that ALL_TRANSFERS[i] <= ALL_TRANSFERS[j]. Required for model structures and compatible pairs
 std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     if(ALL_STORE.size() == 0){
@@ -551,11 +550,6 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     TRANSFER_LATTICE = result;
     return result;
 }
-
-
-
-
-
 
 // A function which determines if a pair of transfer systems is compatible in the sense of CITE
 bool isCompatible(const std::pair<unsigned,unsigned> rhs){
@@ -629,13 +623,58 @@ std::vector<unsigned> compatiblePairs(){
     return result;
 }
 
+// An algorithm which finds the minimal fibrant subgroup of a transfer system in the sense of the minimal normal subgroup which has a transfer to G itself
+unsigned minimalFibrantSubgroup(const std::vector<unsigned>& rhs){
+    unsigned min_fibrant = unsigned(subgroup_dictionary.size()-1);
+    for(unsigned i = 0; i <rhs.size(); ++i){
+        // Note that as we are looking for the minimal subgroup with transfer to G, this will coincide with the minimal index in the subgroup_dictionary given that this is ordered by size of subgroup
+        // Note that this element is unique so this is well defined
+        if((lattice[rhs[i]].second == subgroup_dictionary.size() - 1) & (lattice[rhs[i]].first < min_fibrant)){
+            min_fibrant = lattice[rhs[i]].first;
+        }
+    }
+    return min_fibrant;
+}
+
+// An algorithm which determines if a given transfer system is flat or not in the sense of CITE
+// This asks that if F is the minimal fibrant node then the transfer system resticted to F is trivial.
+bool isFlat(const std::vector<unsigned>& rhs){
+    unsigned F = minimalFibrantSubgroup(rhs);
+        
+    //Start by dealing with the two extreme cases
+    if((F == subgroup_dictionary.size() - 1) & (rhs.size() != 0)){
+        //std::cout << "WINNER" << std::endl;
+        return false;
+    }
+    if(F == 0){
+        return true;
+    }
+    
+    // Find all emements below F and store the edges
+    std::vector<unsigned> edges_below_F;
+    for(unsigned i=0; i < F; ++i){
+        std::pair<unsigned,unsigned> test_edge{i,F};
+        if(std::find(lattice.begin(), lattice.end(), test_edge) != lattice.end()){
+            unsigned test_edge_index = unsigned(std::find(lattice.begin(), lattice.end(), test_edge) - lattice.begin());
+            edges_below_F.push_back(test_edge_index);
+        }
+    }
+    
+    // By closing up under transferClosure we find the sublattice under F
+    // As F is necessarily normal this is well-founded
+    auto lattice_below_F = transferClosure(edges_below_F);
+    
+    //If the intersection of rhs and lattice_below_F is trivial then we are flat
+    for(unsigned i=0; i < lattice_below_F.size(); ++i){
+        if(std::find(rhs.begin(), rhs.end(), lattice_below_F[i]) != rhs.end()){
+            return false;
+        }
+    }
+    return true;
+}
+
 // Implementation ToDo
-// Dynamically save all of the meets and joins ✓
 // General functions for people to access results
-// Compatible pairs:
-    // Compatibility check ✓
-    // Intervals of xfer systems (extend to parallel) ✓
-    // All compatible intervals (Could code in parallel?) ✓
 // Model structures:
     // Intervals of xfer systems (extend to parallel) ✓
     // Left set
@@ -643,8 +682,6 @@ std::vector<unsigned> compatiblePairs(){
     // Weak equivalences
     // Model check
     // Composition closed check
-// bool isSaturated ✓
-// bool isCosaturated ✓
 // return maximally generated things
 // Involution of transfer systems (only in the cyclic case)
 // (co)saturated hull
