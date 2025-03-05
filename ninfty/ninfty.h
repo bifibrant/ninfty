@@ -673,6 +673,44 @@ bool isFlat(const std::vector<unsigned>& rhs){
     return true;
 }
 
+// A function which returns the index of the flat transfers in ALL_TRANSFERS
+std::vector<unsigned> flatTransfers(){
+    std::vector<unsigned> result;
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    
+    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+        if(isFlat(ALL_STORE[i])){
+            result.push_back(i);
+        }
+        
+    }
+    return result;
+}
+
+// The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table
+void dataSheet(){
+    std::string output;
+    output += "G=" + subgroup_dictionary[subgroup_dictionary.size()-1];
+    
+    std::cout << output << std::endl;
+    
+    // Number of transfer systems
+    // Width
+    // Complexity
+    // Generation statistics
+    // Number of saturated
+    // Saturated complexity
+    // Number of cosaturated
+    // Cosaturated complexity
+    // Number of premodel
+    // Number of CClosed
+    // Number of Quillen
+    // Number of flat
+    // Number of compatible
+}
+
 // Implementation ToDo
 // General functions for people to access results
 // Model structures:
@@ -685,10 +723,8 @@ bool isFlat(const std::vector<unsigned>& rhs){
 // return maximally generated things
 // Involution of transfer systems (only in the cyclic case)
 // (co)saturated hull
-// Minimal "fibrant" node
-// Flat transfer systems
 // Saving data from the code
 // TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
-
+// A data sheet PDF for a given group
 
 #endif /* ninfty_h */
