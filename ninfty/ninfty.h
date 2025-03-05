@@ -56,6 +56,8 @@ std::vector<std::vector<unsigned>> SATURATED_STORE;
 std::vector<std::vector<unsigned>> OPPOSITE_SATURATED_STORE;
 std::vector<std::vector<unsigned>> COSATURATED_STORE;
 
+std::vector<std::pair<unsigned,unsigned>> TRANSFER_LATTICE;
+
 // Variable which stores the complexity of the requested computation
 unsigned ALL_COMPLEXITY = 0;
 unsigned SATURATED_COMPLEXITY = 0;
@@ -529,6 +531,7 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
             }
         }
     }
+    TRANSFER_LATTICE = resultant_lattice;
     return resultant_lattice;
 }
 
@@ -574,13 +577,45 @@ bool isCompatible(const std::pair<unsigned,unsigned> rhs){
     return true;
 }
 
+// A thread function that checks compatibility
+std::vector<unsigned> batchCompatible(const unsigned& start_index, const unsigned& end_index){
+    std::vector<unsigned> result;
+    
+    for(unsigned i=start_index; i<end_index; ++i){
+        if(isCompatible(TRANSFER_LATTICE[i])){
+            result.push_back(i);
+        }
+    }
+    return result;
+}
+
+// A function which computes all of the compatible pairs (using parallel)
+std::vector<unsigned> compatiblePairs(){
+    if(TRANSFER_LATTICE.size() == 0){
+        transferLattice();
+    }
+    std::vector<std::shared_future<std::vector<unsigned>>> COMPATIBLE_THREAD_STORE;
+    unsigned step = ceil(double(TRANSFER_LATTICE.size()) / double(NUM_THREADS));
+    for(unsigned i=0; i<NUM_THREADS; ++i){
+        std::shared_future<std::vector<unsigned>> new_thread = std::async(std::launch::async, batchCompatible, i*step, std::min((i+1)*step, unsigned(TRANSFER_LATTICE.size())));
+        COMPATIBLE_THREAD_STORE.push_back(new_thread);
+    }
+    std::vector<unsigned> result;
+    
+    for(unsigned i = 0; i < NUM_THREADS; ++i){
+        result.insert(result.end(), COMPATIBLE_THREAD_STORE[i].get().begin(),COMPATIBLE_THREAD_STORE[i].get().end());
+    }
+    
+    return result;
+}
+
 // Implementation ToDo
-// Dynamically save all of the meets and joins
+// Dynamically save all of the meets and joins ✓
 // General functions for people to access results
 // Compatible pairs:
     // Compatibility check ✓
     // Intervals of xfer systems ✓
-    // All compatible intervals (Could code in parallel?)
+    // All compatible intervals (Could code in parallel?) ✓
 // Model structures:
     // Intervals of xfer systems ✓
     // Left set

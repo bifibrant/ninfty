@@ -17,12 +17,13 @@ int main() {
     
 
     std::cout << lattice_storage.size() << std::endl;
-    
-    for(unsigned i=0; i<lattice_storage.size(); ++i){
-        if(isCompatible(lattice_storage[i])){
-            counter++;
-        }
-
-    }
-    std::cout << counter << std::endl;
+    std::cout << compatiblePairs().size() << std::endl;
+    //
+//    for(unsigned i=0; i<lattice_storage.size(); ++i){
+//        if(isCompatible(lattice_storage[i])){
+//            counter++;
+//        }
+//
+//    }
+//    std::cout << counter << std::endl;
 }
