@@ -181,8 +181,8 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const Gen
     // Close under conjugation
     for(auto it = r0.begin(); it != r0.end(); ++it){
         r1_set.insert(conjugates[(*it)].begin(), conjugates[(*it)].end());
-        //        This will allow for the underlying lattice calculation
-        //        r1_set.insert(*it);
+//                This will allow for the underlying lattice calculation
+//                r1_set.insert(*it);
     }
      
     
@@ -754,10 +754,51 @@ std::vector<unsigned> weakEquivalences(const std::vector<unsigned>& AF, const st
 // A function which checks if an AF AC pair is a CC model structure or model strucutr
 // The return is 0 is it is neither, 1 if it is CC closed, and 2 if it is Quillen
 unsigned modelCheck(const std::vector<unsigned>& AF, const std::vector<unsigned>& AC){
+    auto W = weakEquivalences(AF, AC);
     
+    // Check it is closed under composition (Using Lemma 3.1 of CClosed)
+    std::set<unsigned> store;
+    store.insert(AC.begin(), AC.end());
+    store.insert(AF.begin(), AF.end());
     
+    //AF \circ AC
+    for(unsigned i=0; i<AC.size(); ++i){
+        for(unsigned j=0; j<AF.size(); ++j){
+            store.insert(transitive_closure[AF[j]][AC[i]]);
+        }
+    }
+    std::vector<unsigned> composition_closed_check;
+    composition_closed_check.assign(store.begin(), store.end());
     
-    return 0;
+    if(!isSubsetOrEqual(composition_closed_check, W)){
+        return 0;
+    }
+    
+    //We now check for two-out-of-three
+    for(unsigned f=0; f<lattice.size(); ++f){
+        // Need to make sure that g<f works here as opposed to g<lattice.size()
+        for(unsigned g=0; g<f; ++g){
+            if(lattice[f].first == lattice[g].second){
+                unsigned gf = transitive_closure[g][f];
+                //If exacly 2 of them are in W then we fail.
+                unsigned count = 0;
+                if(std::find(W.begin(), W.end(), f) != W.end()){
+                    count++;
+                }
+                if(std::find(W.begin(), W.end(), g) != W.end()){
+                    count++;
+                }
+                if(std::find(W.begin(), W.end(), gf) != W.end()){
+                    count++;
+                }
+                if(count == 2){
+                    return 1;
+                }
+            }
+        }
+    }
+    
+    return 2;
 }
 
 
@@ -818,9 +859,9 @@ void dataSheet(){
 // Non equivariant (ie underlying) transfer systems
 // Model structures:
     // Intervals of xfer systems (extend to parallel) ✓
-    // Left set
-    // Extension + complements
-    // Weak equivalences
+    // Left set ✓
+    // Extension + complements ✓
+    // Weak equivalences ✓
     // Model check
     // Composition closed check
 // return maximally generated things
