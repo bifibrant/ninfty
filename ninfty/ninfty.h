@@ -59,6 +59,12 @@ std::vector<std::vector<unsigned>> COSATURATED_STORE;
 // Varible which stores the inclusion lattice for transfer systems
 std::vector<std::pair<unsigned,unsigned>> TRANSFER_LATTICE;
 
+// Variables which store various pairwise checks
+// Stores indices of TRANSFER_LATTICE
+std::vector<unsigned> COMPATIBLE_PAIRS;
+std::vector<unsigned> CCLOSED_PAIRS;
+std::vector<unsigned> QUILLEN_PAIRS;
+
 // Variable which stores the generation statistics for transfer systems
 std::vector<unsigned> GENERATION_STATISTICS;
 
@@ -617,6 +623,10 @@ std::vector<unsigned> batchCompatible(const unsigned& start_index, const unsigne
 // A function which computes all of the compatible pairs (using parallel)
 // The return is the index of the pair in TRANSFER_LATTICE
 std::vector<unsigned> compatiblePairs(){
+    if(COMPATIBLE_PAIRS.size() != 0){
+        return COMPATIBLE_PAIRS;
+    }
+    
     if(TRANSFER_LATTICE.size() == 0){
         transferLattice();
     }
@@ -632,6 +642,7 @@ std::vector<unsigned> compatiblePairs(){
         result.insert(result.end(), COMPATIBLE_THREAD_STORE[i].get().begin(),COMPATIBLE_THREAD_STORE[i].get().end());
     }
     
+    COMPATIBLE_PAIRS = result;
     return result;
 }
 
@@ -653,9 +664,7 @@ unsigned minimalFibrantSubgroup(const std::vector<unsigned>& rhs){
 bool isFlat(const std::vector<unsigned>& rhs){
     unsigned F = minimalFibrantSubgroup(rhs);
         
-    //Start by dealing with the two extreme cases
     if((F == subgroup_dictionary.size() - 1) & (rhs.size() != 0)){
-        //std::cout << "WINNER" << std::endl;
         return false;
     }
     if(F == 0){
@@ -797,8 +806,58 @@ unsigned modelCheck(const std::vector<unsigned>& AF, const std::vector<unsigned>
             }
         }
     }
-    
     return 2;
+}
+
+// A thread function that checks model structure properties
+// The first vector will contain the indicies in TRANSFER_LATTICE of the CClosed model structures and the second will return the Model structures
+std::pair<std::vector<unsigned>,std::vector<unsigned>> batchModel(const unsigned& start_index, const unsigned& end_index){
+    std::pair<std::vector<unsigned>,std::vector<unsigned>> result;
+    std::vector<unsigned> c_closed;
+    std::vector<unsigned> quillen;
+    
+    for(unsigned i=start_index; i<end_index; ++i){
+        unsigned model_check = modelCheck(ALL_STORE[TRANSFER_LATTICE[i].first], leftSet(ALL_STORE[TRANSFER_LATTICE[i].second]));
+        
+        if(model_check == 2){
+            c_closed.push_back(i);
+            quillen.push_back(i);
+        }
+        else if(model_check == 1){
+            c_closed.push_back(i);
+        }
+    }
+    result.first = c_closed;
+    result.second = quillen;
+    return result;
+}
+
+void modelPairs(){
+    if(QUILLEN_PAIRS.size() != 0){
+        return;
+    }
+    
+    if(TRANSFER_LATTICE.size() == 0){
+        transferLattice();
+    }
+    std::vector<std::shared_future<std::pair<std::vector<unsigned>,std::vector<unsigned>>>> MODEL_THREAD_STORE;
+    unsigned step = ceil(double(TRANSFER_LATTICE.size()) / double(NUM_THREADS));
+    for(unsigned i=0; i<NUM_THREADS; ++i){
+        std::shared_future<std::pair<std::vector<unsigned>,std::vector<unsigned>>> new_thread = std::async(std::launch::async, batchModel, i*step, std::min((i+1)*step, unsigned(TRANSFER_LATTICE.size())));
+        MODEL_THREAD_STORE.push_back(new_thread);
+    }
+    
+    
+    std::vector<unsigned> result1;
+    std::vector<unsigned> result2;
+    
+    for(unsigned i = 0; i < NUM_THREADS; ++i){
+        result1.insert(result1.end(), MODEL_THREAD_STORE[i].get().first.begin(),MODEL_THREAD_STORE[i].get().first.end());
+        result2.insert(result2.end(), MODEL_THREAD_STORE[i].get().second.begin(),MODEL_THREAD_STORE[i].get().second.end());
+    }
+    
+    CCLOSED_PAIRS = result1;
+    QUILLEN_PAIRS = result2;
 }
 
 
@@ -844,6 +903,13 @@ void dataSheet(){
     
     output += "#Premodel structures=" + std::to_string(TRANSFER_LATTICE.size()) + "\n";
     
+    if(QUILLEN_PAIRS.size() == 0){
+        modelPairs();
+    }
+    
+    output += "#Composition closed structures=" + std::to_string(CCLOSED_PAIRS.size()) + "\n";
+    output += "#Quillen structures=" + std::to_string(QUILLEN_PAIRS.size()) + "\n";
+    
     output += "#Compatible pairs=" + std::to_string(compatiblePairs().size()) + "\n";
     
     std::cout << output << std::endl;
@@ -862,7 +928,7 @@ void dataSheet(){
     // Left set ✓
     // Extension + complements ✓
     // Weak equivalences ✓
-    // Model check
+    // Model check ✓
     // Composition closed check
 // return maximally generated things
 // Involution of transfer systems (only in the cyclic case)

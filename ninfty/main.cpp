@@ -5,14 +5,16 @@
 //  Created by Scott Balchin on 19/02/2025.
 //
 
-#include "group_data/Cp2q.h"
+#include "group_data/Cpqr.h"
 #include "ninfty.h"
 
 
 int main() {
 //    transferFind(false, ALL);
+
     dataSheet();
     
+    return 0;
     unsigned counter = 0;
     std::vector<unsigned> cc_store;
     for(unsigned i=0; i<TRANSFER_LATTICE.size(); ++i){
@@ -22,7 +24,6 @@ int main() {
         }
     }
 
-    
     std::string sage_string = "P = Poset({";
     for(unsigned i=0; i<ALL_STORE.size(); ++i){
         sage_string += std::to_string(i) + ":[";
@@ -35,15 +36,6 @@ int main() {
     }
     sage_string += "})";
     std::cout << sage_string << std::endl;
-    
-    //sage: P = Poset({0:[3],1:[3],2:[3],3:[4],4:[]})
-    std::cout << counter << std::endl;
-    
-//    std::cout << ALL_STORE[37].size() << std::endl;
-    for(unsigned i=0; i<ALL_STORE[65].size(); ++i){
-        std::cout << subgroup_dictionary[lattice[ALL_STORE[65][i]].first] << " --> " << subgroup_dictionary[lattice[ALL_STORE[65][i]].second] << std::endl;
-    }
-    
-    std::cout << ALL_STORE[65].size() << std::endl;
+
 
 }
