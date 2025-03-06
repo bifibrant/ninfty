@@ -5,7 +5,7 @@
 //  Created by Scott Balchin on 19/02/2025.
 //
 
-#ifndef ninfty_h
+#ifndef ninfty_h$
 #define ninfty_h
 
 #include <iostream>
@@ -914,22 +914,68 @@ void dataSheet(){
     
     std::cout << output << std::endl;
    
-    // Number of CClosed
-    // Number of Quillen
     // Number of weak equivalence types
 
 }
 
+// A copy of the above function, but this time outputting to a LaTeX table
+void dataSheetLatex(){
+    std::string output;
+    
+    output += "\\begin{table}[]\n\\begin{tabular}{|cc|}\n\\hline\n\\multicolumn{2}{|c|}{$G = ";
+    output += subgroup_dictionary[subgroup_dictionary.size()-1];
+    output += "$} \\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Transfer systems} & ";
+    
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    output += std::to_string(ALL_STORE.size());
+    
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Complexity} & " + std::to_string(ALL_COMPLEXITY);
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Width} & " + std::to_string(width());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Generation values} & \\{1";
+    for(unsigned i=0; i<GENERATION_STATISTICS.size()-1; ++i){
+        output += "," + std::to_string(GENERATION_STATISTICS[i]);
+    }
+    output += "\\}";
+    
+    if(OPPOSITE_SATURATED_STORE.size() == 0){
+        transferFind(false, SATURATED);
+    }
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Saturated} & " + std::to_string(OPPOSITE_SATURATED_STORE.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Saturated complexity} & " + std::to_string(SATURATED_COMPLEXITY);
+    
+    if(COSATURATED_STORE.size() == 0){
+        transferFind(false, COSATURATED);
+    }
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Cosaturated} & " + std::to_string(COSATURATED_STORE.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Cosaturated complexity} & " + std::to_string(COSATURATED_COMPLEXITY);
+    
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Flat} & " + std::to_string(flatTransfers().size());
+    
+    
+    if(TRANSFER_LATTICE.size() == 0){
+        transferLattice();
+    }
+    
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Premodel structures} & " + std::to_string(TRANSFER_LATTICE.size());
+        
+    if(QUILLEN_PAIRS.size() == 0){
+        modelPairs();
+    }
+    
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#C.closed structures} & " + std::to_string(CCLOSED_PAIRS.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Quillen structures} & " + std::to_string(QUILLEN_PAIRS.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Compatible pairs} & " + std::to_string(compatiblePairs().size());
+
+    output += " \\\\ \\hline\n\\end{tabular}\n\\end{table}";
+    std::cout << output << std::endl;
+}
+
+
 // Implementation ToDo
 // General functions for people to access results
 // Non equivariant (ie underlying) transfer systems
-// Model structures:
-    // Intervals of xfer systems (extend to parallel) ✓
-    // Left set ✓
-    // Extension + complements ✓
-    // Weak equivalences ✓
-    // Model check ✓
-    // Composition closed check
 // return maximally generated things
 // Involution of transfer systems (only in the cyclic case)
 // (co)saturated hull
