@@ -56,7 +56,11 @@ std::vector<std::vector<unsigned>> SATURATED_STORE;
 std::vector<std::vector<unsigned>> OPPOSITE_SATURATED_STORE;
 std::vector<std::vector<unsigned>> COSATURATED_STORE;
 
+// Varible which stores the inclusion lattice for transfer systems
 std::vector<std::pair<unsigned,unsigned>> TRANSFER_LATTICE;
+
+// Variable which stores the generation statistics for transfer systems
+std::vector<unsigned> GENERATION_STATISTICS;
 
 // Variable which stores the complexity of the requested computation
 unsigned ALL_COMPLEXITY = 0;
@@ -257,6 +261,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     NEW_EDGES.push_back(empty_transfer);
     RESULT.insert(empty_transfer);
     GOOD_EDGES.clear();
+    GENERATION_STATISTICS.clear();
     
     // Manually do the first iteration to find the basis edges, we call these edges "good"
     // Note that this only has an effect when the group G is non-abelian
@@ -315,6 +320,8 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         std::cout << "Algorithm Step 0: 1" << std::endl;
     }
     
+    GENERATION_STATISTICS.push_back(unsigned(GOOD_EDGES.size()-1));
+    
     //The recursive algorithm for finding all transfer systems as closed sets
     while(diff != 0){
         
@@ -343,6 +350,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         }
         
         diff = RESULT.size() - old_size;
+        GENERATION_STATISTICS.push_back(unsigned(diff));
         gen_step++;
     }
     // Store the generation step as the complexity, and sort the arrays for ease of browsing later
@@ -690,25 +698,54 @@ std::vector<unsigned> flatTransfers(){
 }
 
 // The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table
+// This may run very slowly for large/compelx groups!
 void dataSheet(){
     std::string output;
-    output += "G=" + subgroup_dictionary[subgroup_dictionary.size()-1];
+    output += "G=" + subgroup_dictionary[subgroup_dictionary.size()-1] + "\n";
+    
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    output += "#Transfer Systems=" + std::to_string(ALL_STORE.size()) + "\n";
+    output += "Complexity=" + std::to_string(ALL_COMPLEXITY) + "\n";
+    
+    output += "Generation Statistics={1";
+    
+    for(unsigned i=0; i<GENERATION_STATISTICS.size()-1; ++i){
+        output += "," + std::to_string(GENERATION_STATISTICS[i]);
+    }
+    
+    output += "}\n";
+    
+    if(OPPOSITE_SATURATED_STORE.size() == 0){
+        transferFind(false, SATURATED);
+    }
+    output += "#Saturated Transfer Systems=" + std::to_string(OPPOSITE_SATURATED_STORE.size()) + "\n";
+    output += "Saturated Complexity=" + std::to_string(SATURATED_COMPLEXITY) + "\n";
+
+    if(COSATURATED_STORE.size() == 0){
+        transferFind(false, COSATURATED);
+    }
+    output += "#Saturated Transfer Systems=" + std::to_string(COSATURATED_STORE.size()) + "\n";
+    output += "Saturated Complexity=" + std::to_string(COSATURATED_COMPLEXITY) + "\n";
+    
+    output += "Width=" + std::to_string(width()) + "\n";
+    
+    output += "#Flat transfers=" + std::to_string(flatTransfers().size()) + "\n";
+    
+    if(TRANSFER_LATTICE.size() == 0){
+        transferLattice();
+    }
+    
+    output += "#Premodel structures=" + std::to_string(TRANSFER_LATTICE.size()) + "\n";
+    
+    output += "#Compatible pairs=" + std::to_string(compatiblePairs().size()) + "\n";
     
     std::cout << output << std::endl;
-    
-    // Number of transfer systems
-    // Width
-    // Complexity
-    // Generation statistics
-    // Number of saturated
-    // Saturated complexity
-    // Number of cosaturated
-    // Cosaturated complexity
-    // Number of premodel
+   
     // Number of CClosed
     // Number of Quillen
-    // Number of flat
-    // Number of compatible
+
 }
 
 // Implementation ToDo
