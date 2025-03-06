@@ -177,12 +177,15 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const Gen
     if(transitive_closure.size() == 0){
         findTransitiveClosure();
     }
-    
+        
     // Close under conjugation
     for(auto it = r0.begin(); it != r0.end(); ++it){
         r1_set.insert(conjugates[(*it)].begin(), conjugates[(*it)].end());
+        //        This will allow for the underlying lattice calculation
+        //        r1_set.insert(*it);
     }
-        
+     
+    
     // Close under intersection
     r2_set = r1_set;
     if(gen_type == SATURATED){
@@ -320,7 +323,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         std::cout << "Algorithm Step 0: 1" << std::endl;
     }
     
-    GENERATION_STATISTICS.push_back(unsigned(GOOD_EDGES.size()-1));
+    GENERATION_STATISTICS.push_back(unsigned(GOOD_EDGES.size()));
     
     //The recursive algorithm for finding all transfer systems as closed sets
     while(diff != 0){
@@ -380,7 +383,7 @@ std::vector<std::vector<unsigned>> allTransfers(){
     return ALL_STORE;
 }
 
-// Need to check for the two-out-of-three property
+// Need to check for the two-out-of-three property for saturation
 bool isSaturated(const std::vector<unsigned>& rhs){
     for(unsigned i=0; i<rhs.size(); ++i){
         for(unsigned j=0; j<rhs.size(); ++j){
@@ -612,6 +615,7 @@ std::vector<unsigned> batchCompatible(const unsigned& start_index, const unsigne
 }
 
 // A function which computes all of the compatible pairs (using parallel)
+// The return is the index of the pair in TRANSFER_LATTICE
 std::vector<unsigned> compatiblePairs(){
     if(TRANSFER_LATTICE.size() == 0){
         transferLattice();
@@ -697,6 +701,66 @@ std::vector<unsigned> flatTransfers(){
     return result;
 }
 
+/* Start of Model Structure functions */
+// A function which computes the left set of a transfer system using the algorithm of FOOQW
+std::vector<unsigned> leftSet(const std::vector<unsigned> & T){
+    std::set<unsigned> temp;
+    temp.insert(T.begin(), T.end());
+    //Start by taking the downward extension
+    for(unsigned p=0; p<T.size(); ++p){
+        for(unsigned i=0; i<lattice.size(); ++i){
+            if(lattice[T[p]].second == lattice[i].second){
+                //Now check for if lattice[i].first < lattice[T[p]].first, if so we add the index
+                std::pair<unsigned, unsigned> to_find{lattice[i].first, lattice[T[p]].first};
+                auto it = std::find(lattice.begin(), lattice.end(), to_find);
+                if(it != lattice.end()){
+                    std::pair<unsigned, unsigned> to_find_2{lattice[i].first, lattice[T[p]].second};
+                    auto it2 = std::find(lattice.begin(), lattice.end(), to_find_2);
+                    //std::cout << "adding edge " << (it2 - lattice.begin()) << std::endl;
+                    temp.insert(unsigned(it2 - lattice.begin()));
+                }
+            }
+        }
+    }
+    
+    //Now take the complement
+    std::vector<unsigned> res;
+    for(unsigned i=0; i<lattice.size(); ++i){
+        if(!temp.contains(i)){
+            res.push_back(i);
+        }
+    }
+    return res;
+}
+
+// A function that produces the weak equivalences of an AF AC pair
+std::vector<unsigned> weakEquivalences(const std::vector<unsigned>& AF, const std::vector<unsigned>& AC){
+    std::set<unsigned> store;
+    store.insert(AC.begin(), AC.end());
+    store.insert(AF.begin(), AF.end());
+    
+    //AF \circ AC
+    for(unsigned i=0; i<AC.size(); ++i){
+        for(unsigned j=0; j<AF.size(); ++j){
+            store.insert(transitive_closure[AC[i]][AF[j]]);
+        }
+    }
+    
+    std::vector<unsigned> res;
+    res.assign(store.begin(), store.end());
+    return res;
+}
+
+// A function which checks if an AF AC pair is a CC model structure or model strucutr
+// The return is 0 is it is neither, 1 if it is CC closed, and 2 if it is Quillen
+unsigned modelCheck(const std::vector<unsigned>& AF, const std::vector<unsigned>& AC){
+    
+    
+    
+    return 0;
+}
+
+
 // The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table
 // This may run very slowly for large/compelx groups!
 void dataSheet(){
@@ -745,11 +809,13 @@ void dataSheet(){
    
     // Number of CClosed
     // Number of Quillen
+    // Number of weak equivalence types
 
 }
 
 // Implementation ToDo
 // General functions for people to access results
+// Non equivariant (ie underlying) transfer systems
 // Model structures:
     // Intervals of xfer systems (extend to parallel) ✓
     // Left set
