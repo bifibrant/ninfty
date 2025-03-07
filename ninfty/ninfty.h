@@ -1042,11 +1042,72 @@ void dataSheetLatex(){
     std::cout << output << std::endl;
 }
 
+// A function which returns a Sage command for the poset of transfer systems
+std::string sageTransferPoset(){
+    if(TRANSFER_LATTICE.size() == 0){
+        transferLattice();
+    }
+    std::string sage_string = "P = Poset({";
+    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+        sage_string += std::to_string(i) + ":[";
+        for(unsigned l=0; l<TRANSFER_LATTICE.size(); ++l){
+            if(TRANSFER_LATTICE[l].first == i & TRANSFER_LATTICE[l].second != i){
+                sage_string += std::to_string(TRANSFER_LATTICE[l].second) + ",";
+            }
+        }
+        sage_string += "],";
+    }
+    sage_string += "})";
+    std::cout << sage_string << std::endl;
+    
+    return sage_string;
+}
+
+// A function which returns a Sage command for the poset of transfer systems whose intervals are CClosed
+std::string sageCClosedPoset(){
+    if(CCLOSED_PAIRS.size() == 0){
+        modelPairs();
+    }
+    std::string sage_string = "P = Poset({";
+    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+        sage_string += std::to_string(i) + ":[";
+        for(unsigned l=0; l<CCLOSED_PAIRS.size(); ++l){
+            if(TRANSFER_LATTICE[CCLOSED_PAIRS[l]].first == i & TRANSFER_LATTICE[CCLOSED_PAIRS[l]].second != i){
+                sage_string += std::to_string(TRANSFER_LATTICE[CCLOSED_PAIRS[l]].second) + ",";
+            }
+        }
+        sage_string += "],";
+    }
+    sage_string += "})";
+    std::cout << sage_string << std::endl;
+    
+    return sage_string;
+}
+
+// A function which returns a Sage command for the poset of transfer systems whose intervals are Quillen
+std::string sageQuillenPoset(){
+    if(QUILLEN_PAIRS.size() == 0){
+        modelPairs();
+    }
+    std::string sage_string = "P = Poset({";
+    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+        sage_string += std::to_string(i) + ":[";
+        for(unsigned l=0; l<QUILLEN_PAIRS.size(); ++l){
+            if(TRANSFER_LATTICE[QUILLEN_PAIRS[l]].first == i & TRANSFER_LATTICE[QUILLEN_PAIRS[l]].second != i){
+                sage_string += std::to_string(TRANSFER_LATTICE[QUILLEN_PAIRS[l]].second) + ",";
+            }
+        }
+        sage_string += "],";
+    }
+    sage_string += "})";
+    std::cout << sage_string << std::endl;
+    
+    return sage_string;
+}
 
 // Implementation ToDo
 // General functions for people to access results
 // Non equivariant (ie underlying) transfer systems and also maybe quotient poset
-// return maximally generated things
 // Involution of transfer systems (only in the cyclic case)
 // Saving data from the code
 // TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
