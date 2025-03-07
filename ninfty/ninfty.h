@@ -1105,6 +1105,52 @@ std::string sageQuillenPoset(){
     return sage_string;
 }
 
+// A function to check if the given group is Dedekind
+bool isDedekind(){
+    for(unsigned i = 0; i < conjugates.size(); ++i){
+        if(conjugates[i].size() > 1){
+            return false;
+        }
+    }
+    return true;
+}
+
+// A function which returns the subgroup dictionary
+// Will also need to take care of conjugacy classes
+std::string subgroupDictionary(){
+    std::string result;
+    unsigned group_counter = 0;
+    unsigned group_counter2 = 0;
+    for(unsigned i = 0; i < subgroup_dictionary.size(); ++i){
+        if( i > 0 && subgroup_dictionary[i] == subgroup_dictionary[i+1]){
+            group_counter += 1;
+        }
+        else{
+            group_counter2 = group_counter;
+            group_counter = 0;
+        }
+        result += "{" + std::to_string(i) + ":" + subgroup_dictionary[i];
+        if(group_counter > 0){
+            result += "(" + std::to_string(group_counter) + ")";
+        }
+        if(group_counter2 > 0){
+            result += "(" + std::to_string(group_counter2) + ")";
+            group_counter2 = 0;
+        }
+        result += "}\n";
+    }
+    
+    //If we are not Dedkind then we need to give information about conjugates
+    return result;
+}
+
+// A function which will return the data of a given transfer system
+std::string printTransferSystem(std::vector<unsigned>) {
+    std::string result;
+    
+    return result;
+}
+
 // Implementation ToDo
 // General functions for people to access results
 // Non equivariant (ie underlying) transfer systems and also maybe quotient poset
