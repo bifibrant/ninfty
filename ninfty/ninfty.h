@@ -860,6 +860,22 @@ void modelPairs(){
     QUILLEN_PAIRS = result2;
 }
 
+// A function which computes all of the (unique!) different weak equivalence structures
+std::vector<std::vector<unsigned>> weakEquivalenceTypes(){
+    std::vector<std::vector<unsigned>> result;
+    std::set<std::vector<unsigned>> result_set;
+    
+    if(QUILLEN_PAIRS.size() == 0){
+        modelPairs();
+    }
+    
+    for(unsigned i=0; i<QUILLEN_PAIRS.size(); ++i){
+        result_set.insert(weakEquivalences(ALL_STORE[TRANSFER_LATTICE[QUILLEN_PAIRS[i]].first], leftSet(ALL_STORE[TRANSFER_LATTICE[QUILLEN_PAIRS[i]].second])));
+    }
+    
+    result.assign(result_set.begin(), result_set.end());
+    return result;
+}
 
 // The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table
 // This may run very slowly for large/compelx groups!
@@ -909,6 +925,7 @@ void dataSheet(){
     
     output += "#Composition closed structures=" + std::to_string(CCLOSED_PAIRS.size()) + "\n";
     output += "#Quillen structures=" + std::to_string(QUILLEN_PAIRS.size()) + "\n";
+    output += "#Weak equivalence types" + std::to_string(weakEquivalenceTypes().size()) + "\n";
     
     output += "#Compatible pairs=" + std::to_string(compatiblePairs().size()) + "\n";
     
@@ -921,6 +938,7 @@ void dataSheet(){
 // A copy of the above function, but this time outputting to a LaTeX table
 void dataSheetLatex(){
     std::string output;
+    
     
     output += "\\begin{table}[]\n\\begin{tabular}{|cc|}\n\\hline\n\\multicolumn{2}{|c|}{$G = ";
     output += subgroup_dictionary[subgroup_dictionary.size()-1];
@@ -966,6 +984,8 @@ void dataSheetLatex(){
     
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#C.closed structures} & " + std::to_string(CCLOSED_PAIRS.size());
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Quillen structures} & " + std::to_string(QUILLEN_PAIRS.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Weak equivalence types} & " + std::to_string(weakEquivalenceTypes().size());
+    
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Compatible pairs} & " + std::to_string(compatiblePairs().size());
 
     output += " \\\\ \\hline\n\\end{tabular}\n\\end{table}";
