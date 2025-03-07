@@ -10,6 +10,9 @@
 
 
 int main() {
+    transferFind(true, ALL);
+    
+    return 0;
     dataSheetLatex();
     return 0;
     

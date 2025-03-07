@@ -56,6 +56,9 @@ std::vector<std::vector<unsigned>> SATURATED_STORE;
 std::vector<std::vector<unsigned>> OPPOSITE_SATURATED_STORE;
 std::vector<std::vector<unsigned>> COSATURATED_STORE;
 
+// A varaible which stores the maximally generated transfer systems
+std::vector<std::vector<unsigned>> MAXIMALLY_GENERATED;
+
 // Varible which stores the inclusion lattice for transfer systems
 std::vector<std::pair<unsigned,unsigned>> TRANSFER_LATTICE;
 
@@ -361,6 +364,13 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         diff = RESULT.size() - old_size;
         GENERATION_STATISTICS.push_back(unsigned(diff));
         gen_step++;
+        
+        // This will store the maximally generated transfer systems
+        // The choice of 100 here is arbitrary, but should work given all seen examples
+        if(NEW_EDGES.size() < 100 & NEW_EDGES.size() != 0){
+            MAXIMALLY_GENERATED = NEW_EDGES;
+        }
+        
     }
     // Store the generation step as the complexity, and sort the arrays for ease of browsing later
     if(gen_type == ALL){
@@ -1035,10 +1045,9 @@ void dataSheetLatex(){
 
 // Implementation ToDo
 // General functions for people to access results
-// Non equivariant (ie underlying) transfer systems
+// Non equivariant (ie underlying) transfer systems and also maybe quotient poset
 // return maximally generated things
 // Involution of transfer systems (only in the cyclic case)
-// (co)saturated hull
 // Saving data from the code
 // TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
 
