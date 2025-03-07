@@ -5,18 +5,14 @@
 //  Created by Scott Balchin on 19/02/2025.
 //
 
-#include "group_data/Cp3q.h"
+#include "group_data/S4.h"
 #include "ninfty.h"
 
 
 int main() {
-//    transferFind(false, ALL);
-
-//    std::cout << weakEquivalenceTypes().size() << std::endl;
-    
     dataSheetLatex();
-    
     return 0;
+    
     unsigned counter = 0;
     std::vector<unsigned> cc_store;
     for(unsigned i=0; i<TRANSFER_LATTICE.size(); ++i){

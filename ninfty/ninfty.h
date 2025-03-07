@@ -5,7 +5,7 @@
 //  Created by Scott Balchin on 19/02/2025.
 //
 
-#ifndef ninfty_h$
+#ifndef ninfty_h
 #define ninfty_h
 
 #include <iostream>
@@ -877,6 +877,49 @@ std::vector<std::vector<unsigned>> weakEquivalenceTypes(){
     return result;
 }
 
+// A function which returns the largest cosaturated transfer system inside a given one
+std::vector<unsigned> cosaturatedCore(const std::vector<unsigned>& rhs){
+    if(isCosaturated(rhs)){
+        return rhs;
+    }
+    
+    std::vector<unsigned> cosaturated_edges;
+    for(unsigned i = 0; i < rhs.size(); ++i){
+        if(lattice[rhs[i]].second == subgroup_dictionary.size() - 1){
+            cosaturated_edges.push_back(i);
+        }
+    }
+    return transferClosure(cosaturated_edges);
+}
+
+// A function which returns the smallest saturated transfer system containing a given one
+std::vector<unsigned> saturatedHull(const std::vector<unsigned>& rhs){
+    if(isSaturated(rhs)){
+        return rhs;
+    }
+    
+    std::set<unsigned> saturated_edges(rhs.begin(), rhs.end());
+    
+    // We add in all edges to saturated the result
+    // (note if we have computed all of the saturated things there may be a more efficient algorithm TODO)
+    for(unsigned i=0; i<rhs.size(); ++i){
+        for(unsigned j=0; j<rhs.size(); ++j){
+            if(lattice[rhs[i]].first == lattice[rhs[j]].first and lattice[rhs[i]].second != lattice[rhs[j]].second){
+                std::pair<unsigned,unsigned> to_find{lattice[rhs[i]].second, lattice[rhs[j]].second};
+                if(std::find(lattice.begin(), lattice.end(), to_find) != lattice.end()){
+                    auto it = find(lattice.begin(), lattice.end(), to_find);
+                    unsigned index = unsigned(it - lattice.begin());
+                    saturated_edges.insert(index);
+                }
+            }
+        }
+    }
+    
+    std::vector<unsigned> result;
+    result.assign(saturated_edges.begin(), saturated_edges.end());
+    return result;
+}
+
 // The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table
 // This may run very slowly for large/compelx groups!
 void dataSheet(){
@@ -930,9 +973,6 @@ void dataSheet(){
     output += "#Compatible pairs=" + std::to_string(compatiblePairs().size()) + "\n";
     
     std::cout << output << std::endl;
-   
-    // Number of weak equivalence types
-
 }
 
 // A copy of the above function, but this time outputting to a LaTeX table
@@ -1001,6 +1041,5 @@ void dataSheetLatex(){
 // (co)saturated hull
 // Saving data from the code
 // TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
-// A data sheet PDF for a given group
 
 #endif /* ninfty_h */
