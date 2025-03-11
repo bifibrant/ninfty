@@ -46,6 +46,9 @@ public:
     }
 };
 
+// Variable which stores the conjugacy classes of subgroups
+std::vector<std::vector<unsigned>> CONJUGACY_CLASSES;
+
 // Variable which stores the array of meets
 std::vector<std::vector<unsigned>> meetArray;
 
@@ -1219,13 +1222,41 @@ std::string subgroupDictionary(){
             result += "(" + std::to_string(group_counter) + ")";
         }
         if(group_counter2 > 0){
-            result += "(" + std::to_string(group_counter2) + ")";
+            result += "(" + std::to_string(group_counter2+1) + ")";
             group_counter2 = 0;
         }
         result += "}\n";
     }
     
     //If we are not Dedkind then we need to give information about conjugates
+    if(!isDedekind()){
+        CONJUGACY_CLASSES.clear();
+        result += "\nConjugacy Classes:\n[0]\n";
+        std::vector<unsigned> seen_subgroups{0};
+        std::vector<unsigned> conj_class{0};
+        CONJUGACY_CLASSES.push_back(conj_class);
+        for(unsigned i = 1; i<subgroup_dictionary.size(); ++i){
+            if(std::find(seen_subgroups.begin(), seen_subgroups.end(), i) == seen_subgroups.end()){
+                conj_class.clear();
+                std::string conjs = "[";
+                std::pair<unsigned, unsigned> lattice_edge{0, i};
+                unsigned index_of_edge = unsigned(std::find(lattice.begin(), lattice.end(), lattice_edge) - lattice.begin());
+                std::set<unsigned> conj_store;
+                for(unsigned p=0; p<conjugates[index_of_edge].size(); ++p){
+                    seen_subgroups.push_back(lattice[conjugates[index_of_edge][p]].second);
+                    conj_store.insert(seen_subgroups.back());
+                }
+                for(auto it = conj_store.begin(); it != conj_store.end(); ++it){
+                    conjs += std::to_string(*it) + ",";
+                    conj_class.push_back(*it);
+                }
+                CONJUGACY_CLASSES.push_back(conj_class);
+                conjs.pop_back();
+                conjs += "]\n";
+                result += conjs;
+            }
+        }
+    }
     return result;
 }
 
@@ -1355,9 +1386,50 @@ void printAllTransfers(){
     }
 }
 
+// A function which takes in a collection of edges and produces a TikZ string to plot it
+// This will work with the poset up to conjugacy and will auto assign coords in a circle
+void edgesToTikz(const std::vector<unsigned>& rhs){
+    // Populate the conjugacy classes
+    if(CONJUGACY_CLASSES.size() == 0){
+        subgroupDictionary();
+    }
+    std::string output = "\\begin{tikzpicture}\n";
+    unsigned num_nodes = unsigned(CONJUGACY_CLASSES.size());
+    
+    for(unsigned i=0; i<num_nodes; ++i){
+        double theta = 2.0*double(i)*3.14159/double(num_nodes);
+        output += "\\node (" + std::to_string(i) + ") at (" + std::to_string(3.0*sin(theta)).substr(0,6) + "," + std::to_string(3.0*cos(theta)).substr(0,6) + ") {$" + subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+    }
+    
+    std::vector<std::string> transfer_edges;
+    for(unsigned i=0; i<num_nodes; ++i){
+        std::pair<unsigned,unsigned> test_inclusion{CONJUGACY_CLASSES[i][0],CONJUGACY_CLASSES[i][0]};
+        for(unsigned j=0; j<num_nodes; ++j){
+            for(unsigned p=0; p<CONJUGACY_CLASSES[j].size(); ++p){
+                test_inclusion.second = CONJUGACY_CLASSES[j][p];
+                if(std::find(lattice.begin(), lattice.end(), test_inclusion) != lattice.end()){
+                    unsigned index = unsigned(std::find(lattice.begin(), lattice.end(), test_inclusion) - lattice.begin());
+                    if(std::find(rhs.begin(), rhs.end(), index) != rhs.end()){
+                        transfer_edges.push_back("\\draw[thick, red,->] (" + std::to_string(i) + ") edge (" + std::to_string(j) + ");\n");
+                    }
+                    else{
+                        output += "\\draw[black!10,->] (" + std::to_string(i) + ") edge (" + std::to_string(j) + ");\n";
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
+    for(unsigned i=0; i<transfer_edges.size(); ++i){
+        output += transfer_edges[i];
+    }
+    
+    output += "\\end{tikzpicture}";
+    std::cout << output << std::endl;
+    
+}
+
 // Future ToDo
-// Involution of transfer systems (only in the cyclic case)
-// TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
-// Add in data about the conjugation to the dictionary printout
 
 #endif /* ninfty_h */
