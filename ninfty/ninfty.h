@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <future>
 #include <random>
+#include <regex>
 
 enum GenerationType{ ALL, SATURATED, COSATURATED, UNDERLYING };
 
@@ -953,6 +954,40 @@ std::vector<unsigned> saturatedHull(const std::vector<unsigned>& rhs){
     return result;
 }
 
+// A function which returns the dual of a transfer system
+// This will only work in the case that G=Cyclic group
+// We use Theorem 4.21 of FOOQW to compute this as the dual of the opposite of the left set
+std::vector<unsigned> dualTransferSystem(const std::vector<unsigned>& rhs){
+    // If we are not cyclic then we return what we started with
+    if(!(std::regex_search(subgroup_dictionary[subgroup_dictionary.size()-1], std::regex("^C\\d{1,}$")))){
+        return rhs;
+    }
+    // Else we can compute the dual
+    else{
+        //We need to compute the involution by knowing the order of each subgroup
+        std::vector<unsigned> subgroup_orders{1};
+        for(unsigned i=1; i<subgroup_dictionary.size(); ++i){
+            std::string subgroup = subgroup_dictionary[i];
+            subgroup.erase(0, 1);
+            subgroup_orders.push_back(std::stoi(subgroup));
+        }
+        unsigned group_order = subgroup_orders.back();
+        auto left_set = leftSet(rhs);
+        std::vector<unsigned> result;
+        
+        for(unsigned i=0; i<left_set.size(); ++i){
+            unsigned subgroup1 = unsigned(group_order/subgroup_orders[lattice[left_set[i]].second]);
+            unsigned subgroup2 = unsigned(group_order/subgroup_orders[lattice[left_set[i]].first]);
+            unsigned subgroup1_index = unsigned(std::find(subgroup_orders.begin(), subgroup_orders.end(), subgroup1) - subgroup_orders.begin());
+            unsigned subgroup2_index = unsigned(std::find(subgroup_orders.begin(), subgroup_orders.end(), subgroup2) - subgroup_orders.begin());
+            std::pair<unsigned, unsigned> new_edge{subgroup1_index,subgroup2_index};
+            result.push_back(unsigned(std::find(lattice.begin(), lattice.end(), new_edge) - lattice.begin()));
+        }
+        std::sort(result.begin(), result.end());
+        return result;
+    }
+}
+
 // The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table (only suitable for small groups)
 void dataSheet(){
     std::string output;
@@ -1195,7 +1230,7 @@ std::string subgroupDictionary(){
 }
 
 // A function which will return the data of a given transfer system
-std::string printTransferSystem(const std::vector<unsigned>& rhs) {
+std::string stringTransferSystem(const std::vector<unsigned>& rhs) {
     std::string result;
     if(rhs.size() == 0){
         return result += "{Ø}";
@@ -1210,10 +1245,119 @@ std::string printTransferSystem(const std::vector<unsigned>& rhs) {
     return result;
 }
 
+// A collection of user-friendly helper functions to simply access numerical results
+void printNumberOfTransfers(){
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    std::cout << ALL_STORE.size() << std::endl;
+}
+
+void printNumberOfSaturatedTransfers(){
+    if(OPPOSITE_SATURATED_STORE.size() == 0){
+        transferFind(false, SATURATED);
+    }
+    std::cout << OPPOSITE_SATURATED_STORE.size() << std::endl;
+}
+
+void printNumberOfCosaturatedTransfers(){
+    if(COSATURATED_STORE.size() == 0){
+        transferFind(false, COSATURATED);
+    }
+    std::cout << COSATURATED_STORE.size() << std::endl;
+}
+
+void printNumberOfUnderlyingTransfers(){
+    if(UNDERLYING_STORE.size() == 0){
+        transferFind(false, UNDERLYING);
+    }
+    std::cout << UNDERLYING_STORE.size() << std::endl;
+}
+
+void printGenerationStatistics(){
+    if(GENERATION_STATISTICS.size() == 0){
+        transferFind(false, ALL);
+    }
+    std::string output = "1";
+    for(unsigned i=0; i<GENERATION_STATISTICS.size()-1; ++i){
+        output += "," + std::to_string(GENERATION_STATISTICS[i]);
+    }
+    std::cout << output << std::endl;
+}
+
+void printNumberOfFlatTransfers(){
+    std::cout << flatTransfers().size() << std::endl;
+}
+
+void printWidth(){
+    std::cout << width() << std::endl;
+}
+
+void printComplexity(){
+    if(ALL_COMPLEXITY == 0){
+        transferFind(false, ALL);
+    }
+    std::cout << ALL_COMPLEXITY << std::endl;
+}
+
+void printNumberOfMaximallyGenerated(){
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    std::cout << MAXIMALLY_GENERATED.size() << std::endl;
+}
+
+void printNumberOfTransferPairs(){
+    if(TRANSFER_LATTICE.size() == 0){
+        transferLattice();
+    }
+    std::cout << TRANSFER_LATTICE.size() << std::endl;
+}
+
+void printNumberOfCompatiblePairs(){
+    if(COMPATIBLE_PAIRS.size() == 0){
+        compatiblePairs();
+    }
+    std::cout << COMPATIBLE_PAIRS.size() << std::endl;
+}
+
+void printNumberOfCClosedPairs(){
+    if(CCLOSED_PAIRS.size() == 0){
+        modelPairs();
+    }
+    std::cout << CCLOSED_PAIRS.size() << std::endl;
+}
+
+void printNumberOfQuillenPairs(){
+    if(QUILLEN_PAIRS.size() == 0){
+        modelPairs();
+    }
+    std::cout << QUILLEN_PAIRS.size() << std::endl;
+}
+void printNumberOfWeakEquivalenceTypes(){
+    std::cout << weakEquivalenceTypes().size() << std::endl;
+}
+
+void printSubgroupDictionary(){
+    std::cout << subgroupDictionary() << std::endl;
+}
+
+void printTransferSystem(const std::vector<unsigned>& rhs){
+    std::cout << stringTransferSystem(rhs) << std::endl;
+}
+
+void printAllTransfers(){
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    for(unsigned i = 0; i < ALL_STORE.size(); ++i){
+        std::cout << stringTransferSystem(ALL_STORE[i]) << std::endl;
+    }
+}
+
 // Future ToDo
-// General functions to access results
-// Non equivariant (ie underlying) transfer systems and also maybe quotient poset
 // Involution of transfer systems (only in the cyclic case)
 // TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
+// Add in data about the conjugation to the dictionary printout
 
 #endif /* ninfty_h */
