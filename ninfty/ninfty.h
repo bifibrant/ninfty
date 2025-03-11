@@ -17,7 +17,7 @@
 #include <future>
 #include <random>
 
-enum GenerationType{ ALL, SATURATED, COSATURATED };
+enum GenerationType{ ALL, SATURATED, COSATURATED, UNDERLYING };
 
 // A function which determines if one std::vector<T> is contained in another
 template <typename T>
@@ -55,6 +55,7 @@ std::vector<std::vector<unsigned>> ALL_STORE;
 std::vector<std::vector<unsigned>> SATURATED_STORE;
 std::vector<std::vector<unsigned>> OPPOSITE_SATURATED_STORE;
 std::vector<std::vector<unsigned>> COSATURATED_STORE;
+std::vector<std::vector<unsigned>> UNDERLYING_STORE;
 
 // A varaible which stores the maximally generated transfer systems
 std::vector<std::vector<unsigned>> MAXIMALLY_GENERATED;
@@ -75,6 +76,7 @@ std::vector<unsigned> GENERATION_STATISTICS;
 unsigned ALL_COMPLEXITY = 0;
 unsigned SATURATED_COMPLEXITY = 0;
 unsigned COSATURATED_COMPLEXITY = 0;
+unsigned UNDERLYING_COMPLEXITY = 0;
 
 // Setting up global variables and constants
 unsigned NUM_THREADS = unsigned(lattice.size());
@@ -84,6 +86,16 @@ std::vector<unsigned> GOOD_EDGES;
 std::vector<std::vector<unsigned>> transitive_closure;
 std::vector<unsigned> edgesFromE;
 std::vector<unsigned> edgesToG;
+
+// A function to check if the given group is Dedekind
+bool isDedekind(){
+    for(unsigned i = 0; i < conjugates.size(); ++i){
+        if(conjugates[i].size() > 1){
+            return false;
+        }
+    }
+    return true;
+}
 
 // An algorithm which finds (and updates) the edges which are used for cosaturation generation
 void findCosaturationEdges(){
@@ -189,9 +201,12 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const Gen
         
     // Close under conjugation
     for(auto it = r0.begin(); it != r0.end(); ++it){
-        r1_set.insert(conjugates[(*it)].begin(), conjugates[(*it)].end());
-//                This will allow for the underlying lattice calculation
-//                r1_set.insert(*it);
+        if(gen_type != UNDERLYING){
+            r1_set.insert(conjugates[(*it)].begin(), conjugates[(*it)].end());
+        }
+        else{
+            r1_set.insert(*it);
+        }
     }
      
     
@@ -281,7 +296,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     
     auto it = NEW_EDGES.begin();
     for(unsigned i=0; i<lattice.size(); ++i){
-        if(gen_type == ALL){
+        if(gen_type == ALL || gen_type == UNDERLYING){
             std::vector<unsigned> test{i};
             test.insert(std::end(test), std::begin((*it)), std::end((*it)));
             auto closed = transferClosure(test, gen_type);
@@ -375,18 +390,27 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     // Store the generation step as the complexity, and sort the arrays for ease of browsing later
     if(gen_type == ALL){
         ALL_COMPLEXITY = gen_step-1;
+        ALL_STORE.clear();
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(ALL_STORE));
         std::sort(ALL_STORE.begin(), ALL_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     else if(gen_type == SATURATED){
         SATURATED_COMPLEXITY = gen_step-1;
+        OPPOSITE_SATURATED_STORE.clear();
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(OPPOSITE_SATURATED_STORE));
         std::sort(OPPOSITE_SATURATED_STORE.begin(), OPPOSITE_SATURATED_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     else if(gen_type == COSATURATED){
         COSATURATED_COMPLEXITY = gen_step-1;
+        COSATURATED_STORE.clear();
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(COSATURATED_STORE));
         std::sort(COSATURATED_STORE.begin(), COSATURATED_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
+    }
+    else if(gen_type == UNDERLYING){
+        UNDERLYING_COMPLEXITY = gen_step-1;
+        UNDERLYING_STORE.clear();
+        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(UNDERLYING_STORE));
+        std::sort(UNDERLYING_STORE.begin(), UNDERLYING_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     RESULT.clear();
     NEW_EDGES.clear();
@@ -911,7 +935,6 @@ std::vector<unsigned> saturatedHull(const std::vector<unsigned>& rhs){
     std::set<unsigned> saturated_edges(rhs.begin(), rhs.end());
     
     // We add in all edges to saturated the result
-    // (note if we have computed all of the saturated things there may be a more efficient algorithm TODO)
     for(unsigned i=0; i<rhs.size(); ++i){
         for(unsigned j=0; j<rhs.size(); ++j){
             if(lattice[rhs[i]].first == lattice[rhs[j]].first and lattice[rhs[i]].second != lattice[rhs[j]].second){
@@ -930,8 +953,7 @@ std::vector<unsigned> saturatedHull(const std::vector<unsigned>& rhs){
     return result;
 }
 
-// The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table
-// This may run very slowly for large/compelx groups!
+// The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table (only suitable for small groups)
 void dataSheet(){
     std::string output;
     output += "G=" + subgroup_dictionary[subgroup_dictionary.size()-1] + "\n";
@@ -985,7 +1007,7 @@ void dataSheet(){
     std::cout << output << std::endl;
 }
 
-// A copy of the above function, but this time outputting to a LaTeX table
+// A copy of the above function, but this time outputting to a LaTeX table (only suitable for small groups)
 void dataSheetLatex(){
     std::string output;
     
@@ -1038,6 +1060,45 @@ void dataSheetLatex(){
     
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Compatible pairs} & " + std::to_string(compatiblePairs().size());
 
+    output += " \\\\ \\hline\n\\end{tabular}\n\\end{table}";
+    std::cout << output << std::endl;
+}
+
+// Another data sheet which only computes basic facts (no intervals)
+void dataSheetLatexRedux(){
+    std::string output;
+    
+    
+    output += "\\begin{table}[]\n\\begin{tabular}{|cc|}\n\\hline\n\\multicolumn{2}{|c|}{$G = ";
+    output += subgroup_dictionary[subgroup_dictionary.size()-1];
+    output += "$} \\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Transfer systems} & ";
+    
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    output += std::to_string(ALL_STORE.size());
+    
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Complexity} & " + std::to_string(ALL_COMPLEXITY);
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Width} & " + std::to_string(width());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Generation values} & \\{1";
+    for(unsigned i=0; i<GENERATION_STATISTICS.size()-1; ++i){
+        output += "," + std::to_string(GENERATION_STATISTICS[i]);
+    }
+    output += "\\}";
+    
+    if(OPPOSITE_SATURATED_STORE.size() == 0){
+        transferFind(false, SATURATED);
+    }
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Saturated} & " + std::to_string(OPPOSITE_SATURATED_STORE.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Saturated complexity} & " + std::to_string(SATURATED_COMPLEXITY);
+    
+    if(COSATURATED_STORE.size() == 0){
+        transferFind(false, COSATURATED);
+    }
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Cosaturated} & " + std::to_string(COSATURATED_STORE.size());
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{Cosaturated complexity} & " + std::to_string(COSATURATED_COMPLEXITY);
+    
+    output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Flat} & " + std::to_string(flatTransfers().size());
     output += " \\\\ \\hline\n\\end{tabular}\n\\end{table}";
     std::cout << output << std::endl;
 }
@@ -1105,18 +1166,7 @@ std::string sageQuillenPoset(){
     return sage_string;
 }
 
-// A function to check if the given group is Dedekind
-bool isDedekind(){
-    for(unsigned i = 0; i < conjugates.size(); ++i){
-        if(conjugates[i].size() > 1){
-            return false;
-        }
-    }
-    return true;
-}
-
 // A function which returns the subgroup dictionary
-// Will also need to take care of conjugacy classes
 std::string subgroupDictionary(){
     std::string result;
     unsigned group_counter = 0;
@@ -1145,17 +1195,25 @@ std::string subgroupDictionary(){
 }
 
 // A function which will return the data of a given transfer system
-std::string printTransferSystem(std::vector<unsigned>) {
+std::string printTransferSystem(const std::vector<unsigned>& rhs) {
     std::string result;
-    
+    if(rhs.size() == 0){
+        return result += "{Ø}";
+    }
+    result += "{[";
+    for(unsigned i = 0; i<rhs.size(); ++i){
+        result += std::to_string(lattice[rhs[i]].first) + "→" + std::to_string(lattice[rhs[i]].second) + "],[";
+    }
+    result.pop_back();
+    result.pop_back();
+    result += "}";
     return result;
 }
 
-// Implementation ToDo
-// General functions for people to access results
+// Future ToDo
+// General functions to access results
 // Non equivariant (ie underlying) transfer systems and also maybe quotient poset
 // Involution of transfer systems (only in the cyclic case)
-// Saving data from the code
 // TikZ diagrams from the code (maybe just the generating sets? would require an input of the lattice of subgroups)
 
 #endif /* ninfty_h */
