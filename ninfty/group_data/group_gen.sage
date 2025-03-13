@@ -145,3 +145,5 @@ with open(group_name + ".h" , 'w') as f:
     f.write(intersection_string)
     f.write("\n")
     f.write(cointersection_string)
+    f.write("\n")
+    f.write("std::vector<std::string> pretty_subgroup_dictionary{};\nstd::vector<std::string> vertex_layout{};\nstd::vector<std::vector<std::string>> edge_options{};")

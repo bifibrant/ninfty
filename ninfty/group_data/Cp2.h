@@ -32,3 +32,6 @@ std::vector<std::vector<unsigned>> cointersections{
 {}
 }; 
  
+std::vector<std::string> pretty_subgroup_dictionary{};
+std::vector<std::string> vertex_layout{};
+std::vector<std::vector<std::string>> edge_options{};

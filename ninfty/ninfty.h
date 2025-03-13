@@ -1229,7 +1229,7 @@ std::string subgroupDictionary(){
     }
     
     //If we are not Dedkind then we need to give information about conjugates
-    if(!isDedekind()){
+    //if(!isDedekind()){
         CONJUGACY_CLASSES.clear();
         result += "\nConjugacy Classes:\n[0]\n";
         std::vector<unsigned> seen_subgroups{0};
@@ -1256,7 +1256,7 @@ std::string subgroupDictionary(){
                 result += conjs;
             }
         }
-    }
+    //}
     return result;
 }
 
@@ -1396,9 +1396,31 @@ void edgesToTikz(const std::vector<unsigned>& rhs){
     std::string output = "\\begin{tikzpicture}\n";
     unsigned num_nodes = unsigned(CONJUGACY_CLASSES.size());
     
-    for(unsigned i=0; i<num_nodes; ++i){
-        double theta = 2.0*double(i)*3.14159/double(num_nodes);
-        output += "\\node (" + std::to_string(i) + ") at (" + std::to_string(3.0*sin(theta)).substr(0,6) + "," + std::to_string(3.0*cos(theta)).substr(0,6) + ") {$" + subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+    if(vertex_layout.size() != num_nodes){
+        if(pretty_subgroup_dictionary.size() == num_nodes){
+            for(unsigned i=0; i<num_nodes; ++i){
+                double theta = 2.0*double(i)*3.14159/double(num_nodes);
+                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at (" + std::to_string(3.0*sin(theta)).substr(0,6) + "," + std::to_string(3.0*cos(theta)).substr(0,6) + ") {$" + pretty_subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+            }
+        }
+        else{
+            for(unsigned i=0; i<num_nodes; ++i){
+                double theta = 2.0*double(i)*3.14159/double(num_nodes);
+                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at (" + std::to_string(3.0*sin(theta)).substr(0,6) + "," + std::to_string(3.0*cos(theta)).substr(0,6) + ") {$" + subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+            }
+        }
+    }
+    else{
+        if(pretty_subgroup_dictionary.size() == num_nodes){
+            for(unsigned i=0; i<num_nodes; ++i){
+                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at " + vertex_layout[i] + "{$" + pretty_subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+            }
+        }
+        else{
+            for(unsigned i=0; i<num_nodes; ++i){
+                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at " + vertex_layout[i] + "{$" + subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+            }
+        }
     }
     
     std::vector<std::string> transfer_edges;
@@ -1410,10 +1432,20 @@ void edgesToTikz(const std::vector<unsigned>& rhs){
                 if(std::find(lattice.begin(), lattice.end(), test_inclusion) != lattice.end()){
                     unsigned index = unsigned(std::find(lattice.begin(), lattice.end(), test_inclusion) - lattice.begin());
                     if(std::find(rhs.begin(), rhs.end(), index) != rhs.end()){
-                        transfer_edges.push_back("\\draw[thick, red,->] (" + std::to_string(i) + ") edge (" + std::to_string(j) + ");\n");
+                        if(edge_options.size() == num_nodes){
+                            transfer_edges.push_back("\\draw[red,->] (" + std::to_string(i) + ") edge" + edge_options[i][j] + " (" + std::to_string(j) + ");\n");
+                        }
+                        else{
+                            transfer_edges.push_back("\\draw[red,->] (" + std::to_string(i) + ") edge (" + std::to_string(j) + ");\n");
+                        }
                     }
                     else{
-                        output += "\\draw[black!10,->] (" + std::to_string(i) + ") edge (" + std::to_string(j) + ");\n";
+                        if(edge_options.size() == num_nodes){
+                            output += "\\draw[black!10,->] (" + std::to_string(i) + ") edge" + edge_options[i][j] + " (" + std::to_string(j) + ");\n";
+                        }
+                        else{
+                            output += "\\draw[black!10,->] (" + std::to_string(i) + ") edge (" + std::to_string(j) + ");\n";
+                        }
                     }
                     break;
                 }
