@@ -1388,6 +1388,7 @@ void printAllTransfers(){
 
 // A function which takes in a collection of edges and produces a TikZ string to plot it
 // This will work with the poset up to conjugacy and will auto assign coords in a circle
+// Unless explicit coordinates and labels are provided in the header file
 void edgesToTikz(const std::vector<unsigned>& rhs){
     // Populate the conjugacy classes
     if(CONJUGACY_CLASSES.size() == 0){
@@ -1461,7 +1462,5 @@ void edgesToTikz(const std::vector<unsigned>& rhs){
     std::cout << output << std::endl;
     
 }
-
-// Future ToDo
 
 #endif /* ninfty_h */
