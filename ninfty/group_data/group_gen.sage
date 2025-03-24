@@ -1,6 +1,5 @@
-G = PermutationGroup(gap_group = gap.SmallGroup(12,3).AsPermGroup())
-
-group_name = "Cpqrs"
+G = PermutationGroup(gap_group = gap.SmallGroup(243,1).AsPermGroup())
+group_name = "Cp5"
 
 sub = G.subgroups()
 f = lambda h,k: h.is_subgroup(k)

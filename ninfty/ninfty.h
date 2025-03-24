@@ -17,6 +17,7 @@
 #include <future>
 #include <random>
 #include <regex>
+#include <iostream>
 
 enum GenerationType{ ALL, SATURATED, COSATURATED, UNDERLYING };
 
@@ -63,6 +64,7 @@ std::vector<std::vector<unsigned>> UNDERLYING_STORE;
 
 // A varaible which stores the maximally generated transfer systems
 std::vector<std::vector<unsigned>> MAXIMALLY_GENERATED;
+std::vector<std::vector<unsigned>> FLAT_STORE;
 
 // Varible which stores the inclusion lattice for transfer systems
 std::vector<std::pair<unsigned,unsigned>> TRANSFER_LATTICE;
@@ -197,12 +199,12 @@ void computeMeetArray(){
 // The enum is used to see if we want to use intersection (for normal generation) or cointersections (for saturated generation)
 std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const GenerationType& gen_type = ALL){
     std::set<unsigned> r1_set, r2_set, r4_set;
-
+    
     // We check to see if we have computed the transitive closure or not
     if(transitive_closure.size() == 0){
         findTransitiveClosure();
     }
-        
+    
     // Close under conjugation
     for(auto it = r0.begin(); it != r0.end(); ++it){
         if(gen_type != UNDERLYING){
@@ -212,7 +214,7 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const Gen
             r1_set.insert(*it);
         }
     }
-     
+    
     
     // Close under intersection
     r2_set = r1_set;
@@ -561,6 +563,8 @@ unsigned complexity(const GenerationType& gen_type = ALL){
     return 0;
 }
 
+
+
 bool isCosaturated(const std::vector<unsigned>& rhs){
     std::vector<unsigned> test_basis;
     for(unsigned i=0; i<rhs.size(); ++i){
@@ -701,7 +705,7 @@ unsigned minimalFibrantSubgroup(const std::vector<unsigned>& rhs){
 // This asks that if F is the minimal fibrant node then the transfer system resticted to F is trivial.
 bool isFlat(const std::vector<unsigned>& rhs){
     unsigned F = minimalFibrantSubgroup(rhs);
-        
+    
     if((F == subgroup_dictionary.size() - 1) & (rhs.size() != 0)){
         return false;
     }
@@ -734,6 +738,7 @@ bool isFlat(const std::vector<unsigned>& rhs){
 
 // A function which returns the index of the flat transfers in ALL_TRANSFERS
 std::vector<unsigned> flatTransfers(){
+    FLAT_STORE.clear();
     std::vector<unsigned> result;
     if(ALL_STORE.size() == 0){
         transferFind(false, ALL);
@@ -742,9 +747,11 @@ std::vector<unsigned> flatTransfers(){
     for(unsigned i=0; i<ALL_STORE.size(); ++i){
         if(isFlat(ALL_STORE[i])){
             result.push_back(i);
+            FLAT_STORE.push_back(ALL_STORE[i]);
         }
         
     }
+    
     return result;
 }
 
@@ -1015,12 +1022,12 @@ void dataSheet(){
     }
     output += "#Saturated Transfer Systems=" + std::to_string(OPPOSITE_SATURATED_STORE.size()) + "\n";
     output += "Saturated Complexity=" + std::to_string(SATURATED_COMPLEXITY) + "\n";
-
+    
     if(COSATURATED_STORE.size() == 0){
         transferFind(false, COSATURATED);
     }
-    output += "#Saturated Transfer Systems=" + std::to_string(COSATURATED_STORE.size()) + "\n";
-    output += "Saturated Complexity=" + std::to_string(COSATURATED_COMPLEXITY) + "\n";
+    output += "#Cosaturated Transfer Systems=" + std::to_string(COSATURATED_STORE.size()) + "\n";
+    output += "Cosaturated Complexity=" + std::to_string(COSATURATED_COMPLEXITY) + "\n";
     
     output += "Width=" + std::to_string(width()) + "\n";
     
@@ -1038,7 +1045,7 @@ void dataSheet(){
     
     output += "#Composition closed structures=" + std::to_string(CCLOSED_PAIRS.size()) + "\n";
     output += "#Quillen structures=" + std::to_string(QUILLEN_PAIRS.size()) + "\n";
-    output += "#Weak equivalence types" + std::to_string(weakEquivalenceTypes().size()) + "\n";
+    output += "#Weak equivalence types=" + std::to_string(weakEquivalenceTypes().size()) + "\n";
     
     output += "#Compatible pairs=" + std::to_string(compatiblePairs().size()) + "\n";
     
@@ -1087,7 +1094,7 @@ void dataSheetLatex(){
     }
     
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Premodel structures} & " + std::to_string(TRANSFER_LATTICE.size());
-        
+    
     if(QUILLEN_PAIRS.size() == 0){
         modelPairs();
     }
@@ -1097,7 +1104,7 @@ void dataSheetLatex(){
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Weak equivalence types} & " + std::to_string(weakEquivalenceTypes().size());
     
     output += "\\\\ \\hline\n\\multicolumn{1}{|c|}{\\#Compatible pairs} & " + std::to_string(compatiblePairs().size());
-
+    
     output += " \\\\ \\hline\n\\end{tabular}\n\\end{table}";
     std::cout << output << std::endl;
 }
@@ -1142,7 +1149,7 @@ void dataSheetLatexRedux(){
 }
 
 // A function which returns a Sage command for the poset of transfer systems
-std::string sageTransferPoset(){
+void printSageTransferPoset(){
     if(TRANSFER_LATTICE.size() == 0){
         transferLattice();
     }
@@ -1158,12 +1165,10 @@ std::string sageTransferPoset(){
     }
     sage_string += "})";
     std::cout << sage_string << std::endl;
-    
-    return sage_string;
 }
 
 // A function which returns a Sage command for the poset of transfer systems whose intervals are CClosed
-std::string sageCClosedPoset(){
+void printSageCClosedPoset(){
     if(CCLOSED_PAIRS.size() == 0){
         modelPairs();
     }
@@ -1179,12 +1184,10 @@ std::string sageCClosedPoset(){
     }
     sage_string += "})";
     std::cout << sage_string << std::endl;
-    
-    return sage_string;
 }
 
 // A function which returns a Sage command for the poset of transfer systems whose intervals are Quillen
-std::string sageQuillenPoset(){
+void printSageQuillenPoset(){
     if(QUILLEN_PAIRS.size() == 0){
         modelPairs();
     }
@@ -1200,8 +1203,6 @@ std::string sageQuillenPoset(){
     }
     sage_string += "})";
     std::cout << sage_string << std::endl;
-    
-    return sage_string;
 }
 
 // A function which returns the subgroup dictionary
@@ -1228,35 +1229,42 @@ std::string subgroupDictionary(){
         result += "}\n";
     }
     
-    //If we are not Dedkind then we need to give information about conjugates
-    //if(!isDedekind()){
-        CONJUGACY_CLASSES.clear();
-        result += "\nConjugacy Classes:\n[0]\n";
-        std::vector<unsigned> seen_subgroups{0};
-        std::vector<unsigned> conj_class{0};
-        CONJUGACY_CLASSES.push_back(conj_class);
-        for(unsigned i = 1; i<subgroup_dictionary.size(); ++i){
-            if(std::find(seen_subgroups.begin(), seen_subgroups.end(), i) == seen_subgroups.end()){
-                conj_class.clear();
-                std::string conjs = "[";
-                std::pair<unsigned, unsigned> lattice_edge{0, i};
-                unsigned index_of_edge = unsigned(std::find(lattice.begin(), lattice.end(), lattice_edge) - lattice.begin());
-                std::set<unsigned> conj_store;
-                for(unsigned p=0; p<conjugates[index_of_edge].size(); ++p){
-                    seen_subgroups.push_back(lattice[conjugates[index_of_edge][p]].second);
-                    conj_store.insert(seen_subgroups.back());
-                }
-                for(auto it = conj_store.begin(); it != conj_store.end(); ++it){
-                    conjs += std::to_string(*it) + ",";
-                    conj_class.push_back(*it);
-                }
-                CONJUGACY_CLASSES.push_back(conj_class);
-                conjs.pop_back();
-                conjs += "]\n";
-                result += conjs;
+    std::string conj_string;
+    
+    
+    CONJUGACY_CLASSES.clear();
+    conj_string += "\nConjugacy Classes:\n[0]\n";
+    std::vector<unsigned> seen_subgroups{0};
+    std::vector<unsigned> conj_class{0};
+    CONJUGACY_CLASSES.push_back(conj_class);
+    for(unsigned i = 1; i<subgroup_dictionary.size(); ++i){
+        if(std::find(seen_subgroups.begin(), seen_subgroups.end(), i) == seen_subgroups.end()){
+            conj_class.clear();
+            std::string conjs = "[";
+            std::pair<unsigned, unsigned> lattice_edge{0, i};
+            unsigned index_of_edge = unsigned(std::find(lattice.begin(), lattice.end(), lattice_edge) - lattice.begin());
+            std::set<unsigned> conj_store;
+            for(unsigned p=0; p<conjugates[index_of_edge].size(); ++p){
+                seen_subgroups.push_back(lattice[conjugates[index_of_edge][p]].second);
+                conj_store.insert(seen_subgroups.back());
             }
+            for(auto it = conj_store.begin(); it != conj_store.end(); ++it){
+                conjs += std::to_string(*it) + ",";
+                conj_class.push_back(*it);
+            }
+            CONJUGACY_CLASSES.push_back(conj_class);
+            conjs.pop_back();
+            conjs += "]\n";
+            conj_string += conjs;
         }
-    //}
+        
+    }
+    
+    //If we are not Dedkind then we need to give information about conjugates
+    if(!isDedekind()){
+        result += conj_string;
+    }
+    
     return result;
 }
 
@@ -1264,11 +1272,11 @@ std::string subgroupDictionary(){
 std::string stringTransferSystem(const std::vector<unsigned>& rhs) {
     std::string result;
     if(rhs.size() == 0){
-        return result += "{Ø}";
+        return result += "(Ø)";
     }
     result += "{[";
     for(unsigned i = 0; i<rhs.size(); ++i){
-        result += std::to_string(lattice[rhs[i]].first) + "→" + std::to_string(lattice[rhs[i]].second) + "],[";
+        result += std::to_string(lattice[rhs[i]].first) + "," + std::to_string(lattice[rhs[i]].second) + "],[";
     }
     result.pop_back();
     result.pop_back();
@@ -1401,7 +1409,7 @@ void edgesToTikz(const std::vector<unsigned>& rhs){
         if(pretty_subgroup_dictionary.size() == num_nodes){
             for(unsigned i=0; i<num_nodes; ++i){
                 double theta = 2.0*double(i)*3.14159/double(num_nodes);
-                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at (" + std::to_string(3.0*sin(theta)).substr(0,6) + "," + std::to_string(3.0*cos(theta)).substr(0,6) + ") {$" + pretty_subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at (" + std::to_string(3.0*sin(theta)).substr(0,6) + "," + std::to_string(3.0*cos(theta)).substr(0,6) + ") {$" + pretty_subgroup_dictionary[i] + "$};\n";
             }
         }
         else{
@@ -1414,7 +1422,7 @@ void edgesToTikz(const std::vector<unsigned>& rhs){
     else{
         if(pretty_subgroup_dictionary.size() == num_nodes){
             for(unsigned i=0; i<num_nodes; ++i){
-                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at " + vertex_layout[i] + "{$" + pretty_subgroup_dictionary[CONJUGACY_CLASSES[i][0]] + "$};\n";
+                output += "\\node[inner sep=0cm] (" + std::to_string(i) + ") at " + vertex_layout[i] + "{$" + pretty_subgroup_dictionary[i] + "$};\n";
             }
         }
         else{
