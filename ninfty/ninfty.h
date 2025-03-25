@@ -19,7 +19,7 @@
 #include <regex>
 #include <iostream>
 
-enum GenerationType{ ALL, SATURATED, COSATURATED, UNDERLYING };
+enum GenerationType{ ALL, SATURATED, COSATURATED, UNDERLYING, CONJUGACY };
 
 // A function which determines if one std::vector<T> is contained in another
 template <typename T>
@@ -61,6 +61,7 @@ std::vector<std::vector<unsigned>> SATURATED_STORE;
 std::vector<std::vector<unsigned>> OPPOSITE_SATURATED_STORE;
 std::vector<std::vector<unsigned>> COSATURATED_STORE;
 std::vector<std::vector<unsigned>> UNDERLYING_STORE;
+std::vector<std::vector<unsigned>> CONJUGACY_STORE;
 
 // A varaible which stores the maximally generated transfer systems
 std::vector<std::vector<unsigned>> MAXIMALLY_GENERATED;
@@ -83,6 +84,7 @@ unsigned ALL_COMPLEXITY = 0;
 unsigned SATURATED_COMPLEXITY = 0;
 unsigned COSATURATED_COMPLEXITY = 0;
 unsigned UNDERLYING_COMPLEXITY = 0;
+unsigned CONJUGACY_COMPLEXITY = 0;
 
 // Setting up global variables and constants
 unsigned NUM_THREADS = unsigned(lattice.size());
@@ -207,7 +209,7 @@ std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const Gen
     
     // Close under conjugation
     for(auto it = r0.begin(); it != r0.end(); ++it){
-        if(gen_type != UNDERLYING){
+        if(gen_type != UNDERLYING & gen_type != CONJUGACY){
             r1_set.insert(conjugates[(*it)].begin(), conjugates[(*it)].end());
         }
         else{
@@ -302,7 +304,7 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     
     auto it = NEW_EDGES.begin();
     for(unsigned i=0; i<lattice.size(); ++i){
-        if(gen_type == ALL || gen_type == UNDERLYING){
+        if(gen_type == ALL || gen_type == UNDERLYING || gen_type == CONJUGACY){
             std::vector<unsigned> test{i};
             test.insert(std::end(test), std::begin((*it)), std::end((*it)));
             auto closed = transferClosure(test, gen_type);
@@ -417,6 +419,12 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         UNDERLYING_STORE.clear();
         std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(UNDERLYING_STORE));
         std::sort(UNDERLYING_STORE.begin(), UNDERLYING_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
+    }
+    else if(gen_type == CONJUGACY){
+        CONJUGACY_COMPLEXITY = gen_step-1;
+        CONJUGACY_STORE.clear();
+        std::copy(RESULT.begin(), RESULT.end(), std::back_inserter(CONJUGACY_STORE));
+        std::sort(CONJUGACY_STORE.begin(), CONJUGACY_STORE.end(), [](const std::vector<unsigned> & a, const std::vector<unsigned> & b){ return a.size() < b.size(); });
     }
     RESULT.clear();
     NEW_EDGES.clear();
@@ -1471,4 +1479,194 @@ void edgesToTikz(const std::vector<unsigned>& rhs){
     
 }
 
+// A function which returns the poset Sub(G)/G
+std::vector<std::pair<unsigned, unsigned>> latticeUpToConjugacy(){
+    std::vector<std::pair<unsigned, unsigned>> result;
+    if(CONJUGACY_CLASSES.size() == 0){
+        subgroupDictionary();
+    }
+    
+    std::pair<unsigned, unsigned> new_edge;
+    for(unsigned i=0; i<CONJUGACY_CLASSES.size(); ++i){
+        for(unsigned j=0; j<CONJUGACY_CLASSES.size(); ++j){
+            // We want to see if we have this edge or not
+            new_edge.first = i;
+            new_edge.second = j;
+            bool found = false;
+            for(unsigned a = 0; a < CONJUGACY_CLASSES[i].size(); ++a){
+                for(unsigned b = 0; b < CONJUGACY_CLASSES[j].size(); ++b){
+                    std::pair<unsigned,unsigned> to_search{CONJUGACY_CLASSES[i][a], CONJUGACY_CLASSES[j][b]};
+                    if(std::find(lattice.begin(), lattice.end(), to_search) != lattice.end() & !found){
+                        result.push_back(new_edge);
+                        found = true;
+                        break;
+                    }
+                    
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+// We will find the maximal w in the intersection of the downset of x with the downset of z
+std::vector<unsigned> maxInIntersection(const unsigned& x, const unsigned& z){
+    std::vector<unsigned> result;
+    auto lattice_up_to_conjugacy = latticeUpToConjugacy();
+    
+    if(x == z){
+        result.push_back(x);
+        return result;
+    }
+    
+    // Start by finding the downset
+    std::vector<unsigned> below_x{x};
+    std::vector<unsigned> below_z{z};
+    
+    for(unsigned i=0; i<lattice_up_to_conjugacy.size(); ++i){
+        if(lattice_up_to_conjugacy[i].second == x){
+            below_x.push_back(lattice_up_to_conjugacy[i].first);
+        }
+        if(lattice_up_to_conjugacy[i].second == z){
+            below_z.push_back(lattice_up_to_conjugacy[i].first);
+        }
+    }
+
+    
+    std::sort(below_x.begin(), below_x.end());
+    std::sort(below_z.begin(), below_z.end());
+    
+
+    std::vector<unsigned> in_intersection;
+    std::set_intersection(below_x.begin(),below_x.end(),below_z.begin(),below_z.end(),back_inserter(in_intersection));
+    
+    // Now find the maximal elements of in_intersection;
+    for(unsigned m = 0; m < in_intersection.size(); ++m){
+        bool m_is_maximal = true;
+        for(unsigned a = 0; a < in_intersection.size(); ++ a){
+            std::pair<unsigned,unsigned> test_edge{in_intersection[m],in_intersection[a]};
+            if(std::find(lattice_up_to_conjugacy.begin(), lattice_up_to_conjugacy.end(), test_edge) != lattice_up_to_conjugacy.end()){
+                m_is_maximal = false;
+            }
+        }
+        
+        if(m_is_maximal){
+            result.push_back(in_intersection[m]);
+        }
+    }
+    
+    return result;
+}
+
+std::vector<std::vector<std::vector<unsigned>>> conjugationMaximalElements(){
+    if(CONJUGACY_CLASSES.size() == 0){
+        subgroupDictionary();
+    }
+    std::vector<std::vector<std::vector<unsigned>>> result;
+    for(unsigned i=0; i<CONJUGACY_CLASSES.size(); ++i){
+        std::vector<std::vector<unsigned>> row;
+        for(unsigned j=0; j<CONJUGACY_CLASSES.size(); ++j){
+            row.push_back(maxInIntersection(i, j));
+        }
+        result.push_back(row);
+    }
+    return result;
+}
+
+// We now compute the intersections in Sub(G)/G
+std::vector<std::vector<unsigned>> intersectionsUpToConjugacy(){
+    std::vector<std::vector<unsigned>>  result;
+    
+    auto lattice_up_to_conjugacy = latticeUpToConjugacy();
+    auto conjugation_maximal_elements = conjugationMaximalElements();
+    
+    for(unsigned i=0; i<lattice_up_to_conjugacy.size(); ++i){
+        std::vector<unsigned> row{i};
+        // So we have some (x,y) and we want to get all (w,z) for all z < y and w maximal in x \cap z.
+        unsigned x = lattice_up_to_conjugacy[i].first;
+        unsigned y = lattice_up_to_conjugacy[i].second;
+        
+        // Browse though all z < y
+        std::vector<unsigned> z_array;
+        for(unsigned z = 0; z < CONJUGACY_CLASSES.size(); ++z){
+            std::pair<unsigned,unsigned> test_edge{z,y};
+            if(std::find(lattice_up_to_conjugacy.begin(), lattice_up_to_conjugacy.end(), test_edge) != lattice_up_to_conjugacy.end()){
+                z_array.push_back(z);
+            }
+        }
+        
+        for(unsigned k=0; k<z_array.size(); ++k){
+            auto maxEls = conjugation_maximal_elements[z_array[k]][x];
+            for(unsigned w=0; w<maxEls.size(); ++w){
+                //We now find the (w,z)
+                if(maxEls[w] != z_array[k]){
+                    std::pair<unsigned,unsigned> new_edge{maxEls[w], z_array[k]};
+                    //Now we find the index of new_edge in the lattice and we append it
+                    unsigned index = unsigned(std::find(lattice_up_to_conjugacy.begin(), lattice_up_to_conjugacy.end(), new_edge) - lattice_up_to_conjugacy.begin());
+                    row.push_back(index);
+                }
+            }
+        }
+        result.push_back(row);
+    }
+    return result;
+}
+
+// Compute the transitivity matrix
+std::vector<std::vector<unsigned>> findTransitiveClosureConjugation(){
+    std::vector<std::vector<unsigned>> transitive_closure_conjugation;
+    auto lattice_up_to_conjugacy = latticeUpToConjugacy();
+    for(unsigned i=0; i<lattice_up_to_conjugacy.size(); ++i){
+        std::vector<unsigned> i_row;
+        for(unsigned j=0; j<lattice_up_to_conjugacy.size(); ++j){
+            unsigned pos = std::min(i,j);
+            if(lattice_up_to_conjugacy[i].second == lattice_up_to_conjugacy[j].first & i != j){
+                std::pair<unsigned,unsigned> test_el{lattice_up_to_conjugacy[i].first, lattice_up_to_conjugacy[j].second};
+                auto it = std::find(lattice_up_to_conjugacy.begin(), lattice_up_to_conjugacy.end(), test_el);
+                if(it != lattice_up_to_conjugacy.end()){
+                    pos = unsigned(std::distance(lattice_up_to_conjugacy.begin(), it));
+                }
+            }
+            i_row.push_back(pos);
+        }
+        transitive_closure_conjugation.push_back(i_row);
+    }
+    return transitive_closure_conjugation;
+}
+
+// This algorithm returns all the transfer systems on Sub(G)/G
+std::vector<std::vector<unsigned>> conjugacyTransfers(){
+    if(CONJUGACY_STORE.size() == 0){
+        
+        auto res = intersectionsUpToConjugacy();
+        auto new_lattice = latticeUpToConjugacy();
+        auto new_intersections = intersectionsUpToConjugacy();
+        auto new_transitive_closure = findTransitiveClosureConjugation();
+        
+        auto old_lattice = lattice;
+        auto old_intersections = intersections;
+        auto old_transitive_closure = transitive_closure;
+        
+        lattice = new_lattice;
+        intersections = new_intersections;
+        transitive_closure = new_transitive_closure;
+        
+        transferFind(false, CONJUGACY);
+        
+        //Restore the old data
+        lattice = old_lattice;
+        intersections = old_intersections;
+        transitive_closure = old_transitive_closure;
+        
+    }
+    return CONJUGACY_STORE;
+}
+
+void printNumberOfConjugacyTransfers(){
+    if(CONJUGACY_STORE.size() == 0){
+        conjugacyTransfers();
+    }
+    std::cout << CONJUGACY_STORE.size() << std::endl;
+}
 #endif /* ninfty_h */

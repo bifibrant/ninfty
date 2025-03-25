@@ -1,5 +1,5 @@
-G = PermutationGroup(gap_group = gap.SmallGroup(243,1).AsPermGroup())
-group_name = "Cp5"
+G = PermutationGroup(gap_group = gap.SmallGroup(24,13).AsPermGroup())
+group_name = "C2xA4"
 
 sub = G.subgroups()
 f = lambda h,k: h.is_subgroup(k)

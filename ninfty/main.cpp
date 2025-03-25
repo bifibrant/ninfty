@@ -7,7 +7,7 @@
 
 #include <string>
 #include <iostream>
-#include "group_data/S3.h"
+#include "group_data/C2xA4.h"
 #include "ninfty.h"
 
 
