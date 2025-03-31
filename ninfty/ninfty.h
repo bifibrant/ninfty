@@ -618,13 +618,8 @@ std::vector<std::pair<unsigned,unsigned>> transferLattice(){
     return result;
 }
 
-// A function which determines if a pair of transfer systems is compatible in the sense of CITE
-bool isCompatible(const std::pair<unsigned,unsigned> rhs){
-    
-    // rhs.first = multiplicative
-    // rhs.second = additive
-    auto transfer_m = ALL_STORE[rhs.first];
-    auto transfer_a = ALL_STORE[rhs.second];
+// A function which determines if a pair of transfer systems is compatible in the sense of Chan
+bool isCompatible(const std::vector<unsigned>& transfer_m, const std::vector<unsigned>& transfer_a){
     
     if(transfer_m.size() == 0){return true;}
     if(transfer_a.size() == lattice.size()){return true;}
@@ -663,7 +658,7 @@ std::vector<unsigned> batchCompatible(const unsigned& start_index, const unsigne
     std::vector<unsigned> result;
     
     for(unsigned i=start_index; i<end_index; ++i){
-        if(isCompatible(TRANSFER_LATTICE[i])){
+        if(isCompatible(ALL_STORE[TRANSFER_LATTICE[i].first],ALL_STORE[TRANSFER_LATTICE[i].second])){
             result.push_back(i);
         }
     }
@@ -796,8 +791,9 @@ std::vector<unsigned> leftSet(const std::vector<unsigned> & T){
 }
 
 // A function that produces the weak equivalences of an AF AC pair
-std::vector<unsigned> weakEquivalences(const std::vector<unsigned>& AF, const std::vector<unsigned>& AC){
+std::vector<unsigned> weakEquivalences(const std::vector<unsigned>& AF, const std::vector<unsigned>& F){
     std::set<unsigned> store;
+    auto AC = leftSet(F);
     store.insert(AC.begin(), AC.end());
     store.insert(AF.begin(), AF.end());
     
@@ -815,8 +811,10 @@ std::vector<unsigned> weakEquivalences(const std::vector<unsigned>& AF, const st
 
 // A function which checks if an AF AC pair is a CC model structure or model strucutr
 // The return is 0 is it is neither, 1 if it is CC closed, and 2 if it is Quillen
-unsigned modelCheck(const std::vector<unsigned>& AF, const std::vector<unsigned>& AC){
-    auto W = weakEquivalences(AF, AC);
+unsigned modelCheck(const std::vector<unsigned>& AF, const std::vector<unsigned>& F){
+    auto W = weakEquivalences(AF, F);
+    
+    auto AC = leftSet(F);
     
     // Check it is closed under composition (Using Lemma 3.1 of CClosed)
     std::set<unsigned> store;
@@ -870,7 +868,7 @@ std::pair<std::vector<unsigned>,std::vector<unsigned>> batchModel(const unsigned
     std::vector<unsigned> quillen;
     
     for(unsigned i=start_index; i<end_index; ++i){
-        unsigned model_check = modelCheck(ALL_STORE[TRANSFER_LATTICE[i].first], leftSet(ALL_STORE[TRANSFER_LATTICE[i].second]));
+        unsigned model_check = modelCheck(ALL_STORE[TRANSFER_LATTICE[i].first], ALL_STORE[TRANSFER_LATTICE[i].second]);
         
         if(model_check == 2){
             c_closed.push_back(i);
