@@ -7,11 +7,12 @@
 
 #include <string>
 #include <iostream>
-#include "group_data/Q8.h"
+#include "group_data/Cp2.h"
 #include "ninfty.h"
 
 
 int main() {
-    printNumberOfCompatiblePairs();
+    printSageTransferPoset();
+//    dataSheet();
     return 0;
 }
