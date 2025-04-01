@@ -54,7 +54,6 @@ std::vector<std::vector<unsigned>> CONJUGACY_CLASSES;
 std::vector<std::vector<unsigned>> meetArray;
 
 // Variables which stores all requested transfer systems
-// Note that OPPOSITE_SATURATED_STORE stores the "cosatuated transfer systems" on the opposite lattice and does not actually give the saturated transfer systems
 std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> RESULT;
 std::vector<std::vector<unsigned>> ALL_STORE;
 std::vector<std::vector<unsigned>> SATURATED_STORE;
@@ -63,7 +62,7 @@ std::vector<std::vector<unsigned>> COSATURATED_STORE;
 std::vector<std::vector<unsigned>> UNDERLYING_STORE;
 std::vector<std::vector<unsigned>> CONJUGACY_STORE;
 
-// A varaible which stores the maximally generated transfer systems
+// Varaible which stores the maximally generated transfer systems
 std::vector<std::vector<unsigned>> MAXIMALLY_GENERATED;
 std::vector<std::vector<unsigned>> FLAT_STORE;
 
@@ -125,7 +124,7 @@ void findSaturationEdges(){
     }
 }
 
-// An algorithm which finds (and updates) the transitive closre of the lattice elements
+// An algorithm which finds (and updates) the transitive closure of the lattice elements
 void findTransitiveClosure(){
     for(unsigned i=0; i<lattice.size(); ++i){
         std::vector<unsigned> i_row;
@@ -144,7 +143,7 @@ void findTransitiveClosure(){
     }
 }
 
-// An algorithm to comptue the meet (i.e., intersection) of two subgroups A and B
+// An algorithm to comptue the meet of two subgroups A and B
 unsigned computeMeet(const unsigned& A, const unsigned& B){
     if(A == B){
         return A;
@@ -185,6 +184,7 @@ unsigned computeMeet(const unsigned& A, const unsigned& B){
     return 0;
 }
 
+// A function which constructs all meets
 void computeMeetArray(){
     meetArray.clear();
     for(unsigned i = 0; i < subgroup_dictionary.size(); ++i){
@@ -198,7 +198,7 @@ void computeMeetArray(){
 
 // An implementation of Rubin's algorithm to find the closure of a collection of norm maps
 // Adapted from https://arxiv.org/pdf/1903.08723 Construction B.1
-// The enum is used to see if we want to use intersection (for normal generation) or cointersections (for saturated generation)
+// The enum is used to see what type of generation is used
 std::vector<unsigned> transferClosure(const std::vector<unsigned>& r0, const GenerationType& gen_type = ALL){
     std::set<unsigned> r1_set, r2_set, r4_set;
     
@@ -278,9 +278,8 @@ std::unordered_set<std::vector<unsigned>, unsigned_vector_hasher> threadProcess(
 }
 
 // A function which finds all transfer systems for the given group as defined in https://arxiv.org/abs/1905.03797
-// Algorithm adapted from CITE
+// Algorithm adapted from A B B S W Z-C
 // The verbose toggle can be used to supress generation statistics
-// The gen_type adjusts if it is all, saturated, or cosaturated as required
 void transferFind(const bool verbose = true, const GenerationType& gen_type = ALL){
     
     findSaturationEdges();
@@ -299,7 +298,6 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
     GENERATION_STATISTICS.clear();
     
     // Manually do the first iteration to find the basis edges, we call these edges "good"
-    // Note that this only has an effect when the group G is non-abelian
     std::vector<std::vector<unsigned>> temp_new_edges;
     
     auto it = NEW_EDGES.begin();
@@ -389,7 +387,6 @@ void transferFind(const bool verbose = true, const GenerationType& gen_type = AL
         gen_step++;
         
         // This will store the maximally generated transfer systems
-        // The choice of 100 here is arbitrary, but should work given all seen examples
         if(NEW_EDGES.size() < 100 & NEW_EDGES.size() != 0){
             MAXIMALLY_GENERATED = NEW_EDGES;
         }
@@ -476,8 +473,7 @@ std::vector<std::vector<unsigned>> cosaturatedTransfers(){
     return COSATURATED_STORE;
 }
 
-// An implementation of Rubin's algorithm in reverse
-// This provides a set of minimal generators for a given transfer system
+// An implementation of Rubin's algorithm in reverse providing a set of minimal generators for a given transfer system
 std::vector<unsigned> findBasis(const std::vector<unsigned>& rhs){
     auto r2 = rhs;
     
@@ -540,6 +536,8 @@ unsigned width(){
     return unsigned(findBasis(complete).size());
 }
 
+// A function which finds the complexity of a group
+// This is the maxima, size of any minimal basis
 unsigned complexity(const GenerationType& gen_type = ALL){
     if(gen_type == ALL){
         if(ALL_COMPLEXITY != 0){
@@ -572,7 +570,7 @@ unsigned complexity(const GenerationType& gen_type = ALL){
 }
 
 
-
+// A function which checks if a given transfer system is cosaturated
 bool isCosaturated(const std::vector<unsigned>& rhs){
     std::vector<unsigned> test_basis;
     for(unsigned i=0; i<rhs.size(); ++i){
@@ -583,7 +581,7 @@ bool isCosaturated(const std::vector<unsigned>& rhs){
     return (transferClosure(test_basis, COSATURATED) == rhs);
 }
 
-// A thread function that checks inclusions
+// A thread function that checks inclusions of trasnfer systems
 std::vector<std::pair<unsigned,unsigned>> batchTransferLattice(const unsigned& start_index, const unsigned& end_index){
     std::vector<std::pair<unsigned,unsigned>> resultant_lattice;
     
@@ -696,7 +694,6 @@ unsigned minimalFibrantSubgroup(const std::vector<unsigned>& rhs){
     unsigned min_fibrant = unsigned(subgroup_dictionary.size()-1);
     for(unsigned i = 0; i <rhs.size(); ++i){
         // Note that as we are looking for the minimal subgroup with transfer to G, this will coincide with the minimal index in the subgroup_dictionary given that this is ordered by size of subgroup
-        // Note that this element is unique so this is well defined
         if((lattice[rhs[i]].second == subgroup_dictionary.size() - 1) & (lattice[rhs[i]].first < min_fibrant)){
             min_fibrant = lattice[rhs[i]].first;
         }
@@ -704,8 +701,7 @@ unsigned minimalFibrantSubgroup(const std::vector<unsigned>& rhs){
     return min_fibrant;
 }
 
-// An algorithm which determines if a given transfer system is flat or not in the sense of CITE
-// This asks that if F is the minimal fibrant node then the transfer system resticted to F is trivial.
+// An algorithm which determines if a given transfer system is flat or not
 bool isFlat(const std::vector<unsigned>& rhs){
     unsigned F = minimalFibrantSubgroup(rhs);
     
@@ -727,7 +723,6 @@ bool isFlat(const std::vector<unsigned>& rhs){
     }
     
     // By closing up under transferClosure we find the sublattice under F
-    // As F is necessarily normal this is well-founded
     auto lattice_below_F = transferClosure(edges_below_F);
     
     //If the intersection of rhs and lattice_below_F is trivial then we are flat
@@ -758,7 +753,6 @@ std::vector<unsigned> flatTransfers(){
     return result;
 }
 
-/* Start of Model Structure functions */
 // A function which computes the left set of a transfer system using the algorithm of FOOQW
 std::vector<unsigned> leftSet(const std::vector<unsigned> & T){
     std::set<unsigned> temp;
@@ -773,7 +767,6 @@ std::vector<unsigned> leftSet(const std::vector<unsigned> & T){
                 if(it != lattice.end()){
                     std::pair<unsigned, unsigned> to_find_2{lattice[i].first, lattice[T[p]].second};
                     auto it2 = std::find(lattice.begin(), lattice.end(), to_find_2);
-                    //std::cout << "adding edge " << (it2 - lattice.begin()) << std::endl;
                     temp.insert(unsigned(it2 - lattice.begin()));
                 }
             }
@@ -836,11 +829,9 @@ unsigned modelCheck(const std::vector<unsigned>& AF, const std::vector<unsigned>
     
     //We now check for two-out-of-three
     for(unsigned f=0; f<lattice.size(); ++f){
-        // Need to make sure that g<f works here as opposed to g<lattice.size()
         for(unsigned g=0; g<f; ++g){
             if(lattice[f].first == lattice[g].second){
                 unsigned gf = transitive_closure[g][f];
-                //If exacly 2 of them are in W then we fail.
                 unsigned count = 0;
                 if(std::find(W.begin(), W.end(), f) != W.end()){
                     count++;
@@ -1004,7 +995,7 @@ std::vector<unsigned> dualTransferSystem(const std::vector<unsigned>& rhs){
     }
 }
 
-// The beginning of a function which will produce a numerical data sheet for a given group (eventually to be made into a LaTeX table (only suitable for small groups)
+// The beginning of a function which will produce a numerical data sheet for a given group
 void dataSheet(){
     std::string output;
     output += "G=" + subgroup_dictionary[subgroup_dictionary.size()-1] + "\n";
@@ -1115,7 +1106,7 @@ void dataSheetLatex(){
     std::cout << output << std::endl;
 }
 
-// Another data sheet which only computes basic facts (no intervals)
+// Another data sheet which only computes basic facts (no interval satatistics)
 void dataSheetLatexRedux(){
     std::string output;
     
@@ -1487,7 +1478,6 @@ std::vector<std::pair<unsigned, unsigned>> latticeUpToConjugacy(){
     std::pair<unsigned, unsigned> new_edge;
     for(unsigned i=0; i<CONJUGACY_CLASSES.size(); ++i){
         for(unsigned j=0; j<CONJUGACY_CLASSES.size(); ++j){
-            // We want to see if we have this edge or not
             new_edge.first = i;
             new_edge.second = j;
             bool found = false;
@@ -1508,7 +1498,7 @@ std::vector<std::pair<unsigned, unsigned>> latticeUpToConjugacy(){
     return result;
 }
 
-// We will find the maximal w in the intersection of the downset of x with the downset of z
+// A function to find the maximal w in the intersection of the downset of x with the downset of z
 std::vector<unsigned> maxInIntersection(const unsigned& x, const unsigned& z){
     std::vector<unsigned> result;
     auto lattice_up_to_conjugacy = latticeUpToConjugacy();
@@ -1557,6 +1547,7 @@ std::vector<unsigned> maxInIntersection(const unsigned& x, const unsigned& z){
     return result;
 }
 
+// A function which computes all the maximal w as above in Sub(G)/G
 std::vector<std::vector<std::vector<unsigned>>> conjugationMaximalElements(){
     if(CONJUGACY_CLASSES.size() == 0){
         subgroupDictionary();
@@ -1572,7 +1563,7 @@ std::vector<std::vector<std::vector<unsigned>>> conjugationMaximalElements(){
     return result;
 }
 
-// We now compute the intersections in Sub(G)/G
+// A function which computes the intersections in Sub(G)/G
 std::vector<std::vector<unsigned>> intersectionsUpToConjugacy(){
     std::vector<std::vector<unsigned>>  result;
     
@@ -1611,7 +1602,7 @@ std::vector<std::vector<unsigned>> intersectionsUpToConjugacy(){
     return result;
 }
 
-// Compute the transitivity matrix
+// A function which computes the transitivity matrix for Sub(G)/G
 std::vector<std::vector<unsigned>> findTransitiveClosureConjugation(){
     std::vector<std::vector<unsigned>> transitive_closure_conjugation;
     auto lattice_up_to_conjugacy = latticeUpToConjugacy();
@@ -1633,7 +1624,7 @@ std::vector<std::vector<unsigned>> findTransitiveClosureConjugation(){
     return transitive_closure_conjugation;
 }
 
-// This algorithm returns all the transfer systems on Sub(G)/G
+// This function which returns all the transfer systems on Sub(G)/G
 std::vector<std::vector<unsigned>> conjugacyTransfers(){
     if(CONJUGACY_STORE.size() == 0){
         

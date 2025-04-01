@@ -12,7 +12,6 @@
 
 
 int main() {
-    printSageTransferPoset();
-//    dataSheet();
+    dataSheet();
     return 0;
 }
