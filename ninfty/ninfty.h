@@ -9,6 +9,7 @@
 #define ninfty_h
 
 #include <iostream>
+#include <string>
 #include <vector>
 #include <set>
 #include <math.h>
@@ -65,6 +66,7 @@ std::vector<std::vector<unsigned>> CONJUGACY_STORE;
 // Varaible which stores the maximally generated transfer systems
 std::vector<std::vector<unsigned>> MAXIMALLY_GENERATED;
 std::vector<std::vector<unsigned>> FLAT_STORE;
+std::vector<std::vector<unsigned>> LSP_STORE;
 
 // Varible which stores the inclusion lattice for transfer systems
 std::vector<std::pair<unsigned,unsigned>> TRANSFER_LATTICE;
@@ -961,6 +963,35 @@ std::vector<unsigned> saturatedHull(const std::vector<unsigned>& rhs){
     return result;
 }
 
+// A function which returns the indices of the LSPs in the sense of https://arxiv.org/pdf/2401.13523
+std::vector<unsigned> lspFind(){
+    std::vector<unsigned> result;
+    if(ALL_STORE.size() == 0){
+        transferFind(false, ALL);
+    }
+    LSP_STORE.clear();
+    
+    for(unsigned i=0; i<ALL_STORE.size(); ++i){
+        unsigned count = 0;
+        for(unsigned j=i; j<ALL_STORE.size()-1; ++j){
+            if((isCompatible(ALL_STORE[i], ALL_STORE[j])) & (j != ALL_STORE.size()) & (saturatedHull(ALL_STORE[i]) != ALL_STORE[j])){
+                count++;
+            }
+        }
+        if(count == 0){
+            result.push_back(i);
+            LSP_STORE.push_back(ALL_STORE[i]);
+        }
+    }
+    return result;
+}
+
+
+// A function which returns if a given transfer system is connected or not
+bool isConnected(const std::vector<unsigned>& rhs){
+    return(saturatedHull(rhs).size() == lattice.size());
+}
+
 // A function which returns the dual of a transfer system
 // This will only work in the case that G=Cyclic group
 // We use Theorem 4.21 of FOOQW to compute this as the dual of the opposite of the left set
@@ -1348,6 +1379,10 @@ void printNumberOfTransferPairs(){
         transferLattice();
     }
     std::cout << TRANSFER_LATTICE.size() << std::endl;
+}
+
+void printNumberOfLSPs(){
+    std::cout << lspFind().size() << std::endl;
 }
 
 void printNumberOfCompatiblePairs(){

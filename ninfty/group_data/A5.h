@@ -1061,6 +1061,38 @@ std::vector<std::vector<unsigned>> cointersections{
 }; 
  
 
-std::vector<std::string> pretty_subgroup_dictionary{};
-std::vector<std::string> vertex_layout{};
-std::vector<std::vector<std::string>> edge_options{};
+std::vector<std::string> pretty_subgroup_dictionary{
+    "1",
+    "C_2",
+    "C_3",
+    "C_2^2",
+    "C_5",
+    "S_3",
+    "D_5",
+    "A_4",
+    "A_5",
+};
+
+std::vector<std::string> vertex_layout{
+    "(2,0)",
+    "(2,0.803)",
+    "(3.88,1.76)",
+    "(2,1.76)",
+    "(0.125,1.76)",
+    "(3.88,2.97)",
+    "(0.125,2.97)",
+    "(2,2.97)",
+    "(2,3.93)"
+};
+
+std::vector<std::vector<std::string>> edge_options{
+    {"","","","[bend left]","","","","[bend left]","[bend left]"},
+    {"","","","","","","","[bend right]","[bend right]"},
+    {"","","","","","","","",""},
+    {"","","","","","","","","[bend left]"},
+    {"","","","","","","","",""},
+    {"","","","","","","","",""},
+    {"","","","","","","","",""},
+    {"","","","","","","","",""},
+    {"","","","","","","","",""}
+};

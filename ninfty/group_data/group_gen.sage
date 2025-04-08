@@ -1,5 +1,5 @@
-G0 = gap.SmallGroup(60,5)
-group_name = "A5"
+G0 = gap.SmallGroup(36,2)
+group_name = "Cp2q2"
 
 
 G = PermutationGroup(gap_group = gap.Image(gap.IsomorphismPermGroup(G0)))

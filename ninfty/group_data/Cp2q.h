@@ -71,6 +71,17 @@ std::vector<std::vector<unsigned>> cointersections{
 {}
 }; 
  
-std::vector<std::string> pretty_subgroup_dictionary{};
-std::vector<std::string> vertex_layout{};
-std::vector<std::vector<std::string>> edge_options{};
+std::vector<std::string> pretty_subgroup_dictionary{
+    "1", "C_2", "C_3", "C_4", "C_6", "C_{12}"
+};
+std::vector<std::string> vertex_layout{
+    "(0,0)", "(1,0)", "(0,1)", "(2,0)", "(1,1)", "(2,1)"
+};
+std::vector<std::vector<std::string>> edge_options{
+    {"","","","[bend right]","",""},
+    {"","","","","",""},
+    {"","","","","","[bend left]"},
+    {"","","","","",""},
+    {"","","","","",""},
+    {"","","","","",""}
+};
